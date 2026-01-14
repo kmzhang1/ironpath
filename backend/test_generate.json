@@ -1,0 +1,24 @@
+{
+  "profile": {
+    "id": "test-user-123",
+    "name": "John Powerlifter",
+    "biometrics": {
+      "bodyweight": 75,
+      "unit": "kg",
+      "sex": "male",
+      "age": 25
+    },
+    "oneRepMax": {
+      "squat": 150,
+      "bench": 100,
+      "deadlift": 180
+    }
+  },
+  "request": {
+    "goal": "strength_block",
+    "weeks": 4,
+    "daysPerWeek": 4,
+    "limitations": ["Low back pain"],
+    "focusAreas": ["Lockout strength"]
+  }
+}

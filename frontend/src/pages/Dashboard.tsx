@@ -3,16 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { EditableExerciseTable } from '@/components/ui/EditableExerciseTable';
+import { UpdateMaxesModal } from '@/components/ui/UpdateMaxesModal';
 import { useAppStore } from '@/store';
 import { UtilitySidebar } from '@/components/layout/UtilitySidebar';
 import { generateExcelLog } from '@/utils/excelExport';
-import { Download, Calculator, LogOut, Dumbbell } from 'lucide-react';
+import { Download, Calculator, LogOut, Dumbbell, TrendingUp } from 'lucide-react';
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const { currentProgram, profile, user, reset, toggleSidebar } = useAppStore();
+  const { currentProgram, profile, reset, toggleSidebar, completeSession, getSessionProgress } = useAppStore();
 
   const [activeWeek, setActiveWeek] = useState('1');
+  const [showMaxesModal, setShowMaxesModal] = useState(false);
 
   if (!currentProgram || !profile) {
     navigate('/wizard');
@@ -47,6 +50,10 @@ export function Dashboard() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowMaxesModal(true)}>
+              <TrendingUp className="mr-2 h-4 w-4" />
+              Update 1RMs
+            </Button>
             <Button variant="outline" size="sm" onClick={toggleSidebar}>
               <Calculator className="mr-2 h-4 w-4" />
               Utilities
@@ -153,60 +160,13 @@ export function Dashboard() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-zinc-800 text-left">
-                              <th className="pb-2 pr-4 text-sm font-medium text-zinc-400">
-                                Exercise
-                              </th>
-                              <th className="pb-2 px-4 text-sm font-medium text-zinc-400 text-center">
-                                Sets
-                              </th>
-                              <th className="pb-2 px-4 text-sm font-medium text-zinc-400 text-center">
-                                Reps
-                              </th>
-                              <th className="pb-2 px-4 text-sm font-medium text-zinc-400 text-center">
-                                RPE
-                              </th>
-                              <th className="pb-2 px-4 text-sm font-medium text-zinc-400 text-center">
-                                Rest
-                              </th>
-                              <th className="pb-2 pl-4 text-sm font-medium text-zinc-400">
-                                Notes
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {session.exercises.map((exercise, exerciseIdx) => (
-                              <tr
-                                key={exerciseIdx}
-                                className="border-b border-zinc-800 last:border-0"
-                              >
-                                <td className="py-3 pr-4 text-sm text-zinc-50">
-                                  {exercise.name}
-                                </td>
-                                <td className="py-3 px-4 text-sm font-mono text-lime-400 text-center">
-                                  {exercise.sets}
-                                </td>
-                                <td className="py-3 px-4 text-sm font-mono text-lime-400 text-center">
-                                  {exercise.reps}
-                                </td>
-                                <td className="py-3 px-4 text-sm font-mono text-lime-400 text-center">
-                                  {exercise.rpeTarget}
-                                </td>
-                                <td className="py-3 px-4 text-sm text-zinc-400 text-center">
-                                  {Math.floor(exercise.restSeconds / 60)}'
-                                  {(exercise.restSeconds % 60).toString().padStart(2, '0')}"
-                                </td>
-                                <td className="py-3 pl-4 text-sm text-zinc-500 italic">
-                                  {exercise.notes || '-'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                      <EditableExerciseTable
+                        weekNumber={week.weekNumber}
+                        dayNumber={session.dayNumber}
+                        exercises={session.exercises}
+                        sessionCompleted={getSessionProgress(week.weekNumber, session.dayNumber)?.completed}
+                        onCompleteSession={() => completeSession(week.weekNumber, session.dayNumber)}
+                      />
                     </CardContent>
                   </Card>
                 ))}
@@ -218,6 +178,9 @@ export function Dashboard() {
 
       {/* Utility Sidebar */}
       <UtilitySidebar />
+
+      {/* Update Maxes Modal */}
+      <UpdateMaxesModal isOpen={showMaxesModal} onClose={() => setShowMaxesModal(false)} />
     </div>
   );
 }

@@ -57,3 +57,40 @@ export interface User {
   email: string;
   picture?: string;
 }
+
+// Progress tracking types
+export interface ExerciseLog {
+  exerciseId: string; // week-day-exerciseIndex
+  weekNumber: number;
+  dayNumber: number;
+  exerciseIndex: number;
+  sets: {
+    setNumber: number;
+    weight: number;
+    reps: number;
+    rpe: number;
+    completed: boolean;
+    notes?: string;
+  }[];
+  completedAt?: string;
+}
+
+export interface SessionProgress {
+  sessionId: string; // week-day
+  weekNumber: number;
+  dayNumber: number;
+  completed: boolean;
+  completedAt?: string;
+  exerciseLogs: ExerciseLog[];
+}
+
+export interface ProgressHistory {
+  programId: string;
+  sessions: SessionProgress[];
+  oneRepMaxHistory: {
+    date: string;
+    squat: number;
+    bench: number;
+    deadlift: number;
+  }[];
+}
