@@ -75,13 +75,54 @@ export interface ExerciseLog {
   completedAt?: string;
 }
 
+// Feedback categories for workout adjustments
+export type FeedbackCategory =
+  | 'injury'
+  | 'muscle_fatigue'
+  | 'excessive_soreness'
+  | 'low_energy'
+  | 'schedule_conflict'
+  | 'feeling_strong'
+  | 'other';
+
+export interface WorkoutFeedback {
+  sessionId: string;
+  weekNumber: number;
+  dayNumber: number;
+  timestamp: string;
+  categories: FeedbackCategory[];
+  feedbackText?: string;
+  suggestedAdjustment?: string; // AI-generated adjustment
+}
+
 export interface SessionProgress {
   sessionId: string; // week-day
   weekNumber: number;
   dayNumber: number;
   completed: boolean;
   completedAt?: string;
+  scheduledDate?: string; // ISO 8601 date when workout is scheduled/completed
   exerciseLogs: ExerciseLog[];
+  feedback?: WorkoutFeedback;
+}
+
+export interface CheckInAnalysis {
+  type: 'daily' | 'weekly';
+  timestamp: string;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  metrics: {
+    sessionsCompleted: number;
+    sessionsPlanned: number;
+    adherenceRate: number;
+    averageRPE?: number;
+    totalVolume?: number;
+  };
+  insights: string[]; // AI-generated insights
+  recommendations: string[]; // AI-generated recommendations
+  programAdjustmentsNeeded: boolean;
 }
 
 export interface ProgressHistory {
@@ -93,4 +134,5 @@ export interface ProgressHistory {
     bench: number;
     deadlift: number;
   }[];
+  checkIns: CheckInAnalysis[];
 }

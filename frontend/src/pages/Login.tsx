@@ -1,31 +1,60 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAppStore } from '@/store';
-import { loginWithGoogle } from '@/services/api';
-import { Dumbbell, Loader2 } from 'lucide-react';
+import { loginWithGoogle, handleOAuthCallback } from '@/services/api';
+import { Dumbbell, Loader2, AlertCircle } from 'lucide-react';
 
 export function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const setUser = useAppStore((state) => state.setUser);
 
+  // Handle OAuth callback when returning from Google
+  useEffect(() => {
+    const handleCallback = async () => {
+      // Check if this is an OAuth callback
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const searchParams = new URLSearchParams(window.location.search);
+
+      if (hashParams.has('access_token') || searchParams.has('code')) {
+        setIsLoading(true);
+        try {
+          const user = await handleOAuthCallback();
+          if (user) {
+            setUser(user);
+            navigate('/wizard');
+          }
+        } catch (err) {
+          console.error('OAuth callback error:', err);
+          setError('Authentication failed. Please try again.');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    handleCallback();
+  }, [navigate, setUser]);
+
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setError(null);
 
     try {
-      // Simulate OAuth redirect delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await loginWithGoogle();
 
-      const user = await loginWithGoogle();
-      setUser(user);
-
-      // Navigate to wizard
-      navigate('/wizard');
-    } catch (error) {
-      console.error('Login failed:', error);
-    } finally {
+      // If using mock mode (returns a user), navigate immediately
+      if (result) {
+        setUser(result);
+        navigate('/wizard');
+      }
+      // Otherwise, Supabase will redirect to Google (function returns void)
+    } catch (err) {
+      console.error('Login failed:', err);
+      setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
       setIsLoading(false);
     }
   };
@@ -59,6 +88,13 @@ export function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {error && (
+              <div className="flex items-center gap-2 p-3 bg-red-950/50 border border-red-900 rounded-md">
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <p className="text-sm text-red-400">{error}</p>
+              </div>
+            )}
+
             <Button
               onClick={handleGoogleLogin}
               disabled={isLoading}

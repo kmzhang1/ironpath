@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { User, LifterProfile, FullProgram, ProgressHistory, SessionProgress, ExerciseLog } from '@/types';
+import type {
+  User,
+  LifterProfile,
+  FullProgram,
+  ProgressHistory,
+  SessionProgress,
+  ExerciseLog,
+  WorkoutFeedback,
+  CheckInAnalysis,
+} from '@/types';
 
 interface AppState {
   // Auth
@@ -22,6 +31,18 @@ interface AppState {
   logExercise: (log: ExerciseLog) => void;
   completeSession: (weekNum: number, dayNum: number) => void;
   getSessionProgress: (weekNum: number, dayNum: number) => SessionProgress | undefined;
+
+  // Workout Feedback
+  submitWorkoutFeedback: (feedback: WorkoutFeedback) => void;
+  getWorkoutFeedback: (weekNum: number, dayNum: number) => WorkoutFeedback | undefined;
+
+  // Session Dating
+  scheduleWorkout: (weekNum: number, dayNum: number, date: string) => void;
+  getScheduledDate: (weekNum: number, dayNum: number) => string | undefined;
+
+  // Check-ins
+  addCheckIn: (checkIn: CheckInAnalysis) => void;
+  getRecentCheckIns: (type: 'daily' | 'weekly', limit?: number) => CheckInAnalysis[];
 
   // UI State
   isSidebarOpen: boolean;
@@ -87,6 +108,7 @@ export const useAppStore = create<AppState>()(
               programId: currentProgram.id,
               sessions: [],
               oneRepMaxHistory: [],
+              checkIns: [],
             },
           });
         }
@@ -162,6 +184,82 @@ export const useAppStore = create<AppState>()(
 
         const sessionId = `${weekNum}-${dayNum}`;
         return history.sessions.find(s => s.sessionId === sessionId);
+      },
+
+      // Workout Feedback
+      submitWorkoutFeedback: (feedback) => {
+        const history = get().progressHistory;
+        if (!history) return;
+
+        const sessionId = `${feedback.weekNumber}-${feedback.dayNumber}`;
+        let session = history.sessions.find(s => s.sessionId === sessionId);
+
+        if (!session) {
+          session = {
+            sessionId,
+            weekNumber: feedback.weekNumber,
+            dayNumber: feedback.dayNumber,
+            completed: false,
+            exerciseLogs: [],
+          };
+          history.sessions.push(session);
+        }
+
+        session.feedback = feedback;
+        set({ progressHistory: { ...history } });
+      },
+      getWorkoutFeedback: (weekNum, dayNum) => {
+        const session = get().getSessionProgress(weekNum, dayNum);
+        return session?.feedback;
+      },
+
+      // Session Dating
+      scheduleWorkout: (weekNum, dayNum, date) => {
+        const history = get().progressHistory;
+        if (!history) return;
+
+        const sessionId = `${weekNum}-${dayNum}`;
+        let session = history.sessions.find(s => s.sessionId === sessionId);
+
+        if (!session) {
+          session = {
+            sessionId,
+            weekNumber: weekNum,
+            dayNumber: dayNum,
+            completed: false,
+            exerciseLogs: [],
+          };
+          history.sessions.push(session);
+        }
+
+        session.scheduledDate = date;
+        set({ progressHistory: { ...history } });
+      },
+      getScheduledDate: (weekNum, dayNum) => {
+        const session = get().getSessionProgress(weekNum, dayNum);
+        return session?.scheduledDate;
+      },
+
+      // Check-ins
+      addCheckIn: (checkIn) => {
+        const history = get().progressHistory;
+        if (!history) return;
+
+        set({
+          progressHistory: {
+            ...history,
+            checkIns: [...history.checkIns, checkIn],
+          },
+        });
+      },
+      getRecentCheckIns: (type, limit = 5) => {
+        const history = get().progressHistory;
+        if (!history) return [];
+
+        return history.checkIns
+          .filter(c => c.type === type)
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+          .slice(0, limit);
       },
 
       // UI State
