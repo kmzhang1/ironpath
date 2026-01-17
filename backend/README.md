@@ -142,7 +142,7 @@ Generate a new powerlifting program using AI.
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql+asyncpg://postgres:postgres@localhost:5432/ironpath_db` |
 | `GEMINI_API_KEY` | Google Gemini API key | (required) |
-| `GEMINI_MODEL` | Gemini model name | `gemini-2.0-flash-exp` |
+| `GEMINI_MODEL` | Gemini model name | `gemini-2.5-flash` |
 | `ENVIRONMENT` | Environment (development/production) | `development` |
 | `DEBUG` | Enable debug mode | `true` |
 | `CORS_ORIGINS` | Allowed CORS origins (comma-separated) | `http://localhost:5173,http://localhost:3000` |

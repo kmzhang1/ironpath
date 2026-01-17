@@ -2,6 +2,7 @@
 AI Agent Service for Program Generation
 Uses Google Gemini with structured output to generate powerlifting programs
 """
+
 import json
 import logging
 from datetime import datetime
@@ -26,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 class ProgramGenerationError(Exception):
     """Custom exception for program generation failures"""
+
     pass
 
 
@@ -35,13 +37,13 @@ class AIAgent:
     Implements retry logic and structured output validation.
     """
 
-    def __init__(self, api_key: str, model_name: str = "gemini-2.0-flash-exp"):
+    def __init__(self, api_key: str, model_name: str = "gemini-2.5-flash"):
         """
         Initialize the AI Agent with Gemini API.
 
         Args:
             api_key: Google Gemini API key
-            model_name: Gemini model to use (default: gemini-2.0-flash-exp)
+            model_name: Gemini model to use (default: gemini-2.5-flash)
         """
         self.client = genai.Client(api_key=api_key)
         self.model_name = model_name
@@ -63,14 +65,23 @@ class AIAgent:
                     "items": {
                         "type": "object",
                         "properties": {
-                            "weekNumber": {"type": "integer", "description": "Week number"},
+                            "weekNumber": {
+                                "type": "integer",
+                                "description": "Week number",
+                            },
                             "sessions": {
                                 "type": "array",
                                 "items": {
                                     "type": "object",
                                     "properties": {
-                                        "dayNumber": {"type": "integer", "description": "Day 1-7"},
-                                        "focus": {"type": "string", "description": "Session focus"},
+                                        "dayNumber": {
+                                            "type": "integer",
+                                            "description": "Day 1-7",
+                                        },
+                                        "focus": {
+                                            "type": "string",
+                                            "description": "Session focus",
+                                        },
                                         "exercises": {
                                             "type": "array",
                                             "items": {
@@ -83,7 +94,13 @@ class AIAgent:
                                                     "restSeconds": {"type": "integer"},
                                                     "notes": {"type": "string"},
                                                 },
-                                                "required": ["name", "sets", "reps", "rpeTarget", "restSeconds"],
+                                                "required": [
+                                                    "name",
+                                                    "sets",
+                                                    "reps",
+                                                    "rpeTarget",
+                                                    "restSeconds",
+                                                ],
                                             },
                                         },
                                     },

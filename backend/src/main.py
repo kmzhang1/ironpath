@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 
 from .core.config import settings
 from .routes import programs_router
+from .routes.feedback import router as feedback_router
+from .routes.users import router as users_router
 
 # Configure logging
 logging.basicConfig(
@@ -88,6 +90,8 @@ async def root():
 
 # Register routers
 app.include_router(programs_router, prefix="/api")
+app.include_router(feedback_router, prefix="/api")
+app.include_router(users_router, prefix="/api")
 
 
 # Global exception handler

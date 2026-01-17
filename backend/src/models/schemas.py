@@ -5,6 +5,7 @@ These match the TypeScript interfaces from the frontend
 from datetime import datetime
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field
+import enum
 
 
 # ============================================================================
@@ -132,3 +133,81 @@ class ProgramListItem(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ============================================================================
+# Workout Feedback and Check-in Models
+# ============================================================================
+
+class FeedbackCategoryEnum(str, enum.Enum):
+    """Categories for workout feedback"""
+    INJURY = "injury"
+    MUSCLE_FATIGUE = "muscle_fatigue"
+    EXCESSIVE_SORENESS = "excessive_soreness"
+    LOW_ENERGY = "low_energy"
+    SCHEDULE_CONFLICT = "schedule_conflict"
+    FEELING_STRONG = "feeling_strong"
+    OTHER = "other"
+
+
+class WorkoutFeedbackRequest(BaseModel):
+    """Request to submit workout feedback"""
+    weekNumber: int = Field(..., ge=1, description="Week number of the workout")
+    dayNumber: int = Field(..., ge=1, le=7, description="Day number of the workout")
+    categories: List[FeedbackCategoryEnum] = Field(
+        ..., min_length=1, description="Feedback categories selected by user"
+    )
+    feedbackText: Optional[str] = Field(
+        None, max_length=1000, description="Optional detailed feedback text"
+    )
+
+
+class WorkoutFeedbackResponse(BaseModel):
+    """Response with AI-adjusted workout based on feedback"""
+    sessionId: str
+    originalSession: LiftingSessionSchema
+    adjustedSession: LiftingSessionSchema
+    adjustmentReason: str = Field(..., description="AI explanation of adjustments made")
+    timestamp: str
+
+
+class SessionDateUpdate(BaseModel):
+    """Request to update/schedule a workout date"""
+    weekNumber: int = Field(..., ge=1)
+    dayNumber: int = Field(..., ge=1, le=7)
+    scheduledDate: str = Field(..., description="ISO 8601 date string")
+
+
+class CheckInRequest(BaseModel):
+    """Request for daily or weekly check-in analysis"""
+    type: Literal["daily", "weekly"] = Field(..., description="Type of check-in")
+    startDate: Optional[str] = Field(
+        None, description="Start date for analysis (defaults to today/this week)"
+    )
+
+
+class CheckInMetrics(BaseModel):
+    """Metrics calculated for check-in period"""
+    sessionsCompleted: int
+    sessionsPlanned: int
+    adherenceRate: float = Field(..., ge=0.0, le=1.0, description="Completion rate (0-1)")
+    averageRPE: Optional[float] = Field(None, description="Average RPE across sessions")
+    totalVolume: Optional[float] = Field(None, description="Total volume load")
+
+
+class CheckInAnalysisResponse(BaseModel):
+    """AI-powered check-in analysis response"""
+    type: Literal["daily", "weekly"]
+    timestamp: str
+    period: dict = Field(..., description="Start and end dates of analysis period")
+    metrics: CheckInMetrics
+    insights: List[str] = Field(..., description="AI-generated insights about progress")
+    recommendations: List[str] = Field(
+        ..., description="AI-generated recommendations for improvement"
+    )
+    programAdjustmentsNeeded: bool = Field(
+        ..., description="Whether major program changes are recommended"
+    )
+    adjustedProgram: Optional[FullProgramSchema] = Field(
+        None, description="Updated program if adjustments needed"
+    )

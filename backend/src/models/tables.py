@@ -29,8 +29,9 @@ class UnitEnum(str, enum.Enum):
 class User(Base):
     """
     User model - stores authentication and basic profile info
+    Maps to Supabase 'profiles' table
     """
-    __tablename__ = "users"
+    __tablename__ = "profiles"
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
@@ -60,6 +61,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    progress_logs: Mapped[list["ProgressLog"]] = relationship(
+        "ProgressLog",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, name={self.name})>"
@@ -73,7 +79,7 @@ class LifterProfile(Base):
     __tablename__ = "lifter_profiles"
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
-    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("profiles.id"), nullable=False)
 
     # Biometrics
     bodyweight: Mapped[float] = mapped_column(Float, nullable=False)
@@ -118,7 +124,7 @@ class Program(Base):
     __tablename__ = "programs"
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
-    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("profiles.id"), nullable=False)
 
     # Program metadata
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -134,8 +140,60 @@ class Program(Base):
         nullable=False
     )
 
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="programs")
+    progress_logs: Mapped[list["ProgressLog"]] = relationship(
+        "ProgressLog",
+        back_populates="program",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Program(id={self.id}, user_id={self.user_id}, title={self.title})>"
+
+
+class ProgressLog(Base):
+    """
+    Progress Log model - stores workout completion and feedback
+    Tracks actual workout sessions and allows program adjustments
+    """
+    __tablename__ = "progress_logs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("profiles.id"), nullable=False)
+    program_id: Mapped[str] = mapped_column(String, ForeignKey("programs.id"), nullable=False)
+
+    # Session identifiers
+    week_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    day_number: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Completion tracking
+    completed: Mapped[bool] = mapped_column(default=False, nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Feedback data (stored as JSON for flexibility)
+    feedback: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="progress_logs")
+    program: Mapped["Program"] = relationship("Program", back_populates="progress_logs")
+
+    def __repr__(self) -> str:
+        return (
+            f"<ProgressLog(id={self.id}, program_id={self.program_id}, "
+            f"week={self.week_number}, day={self.day_number}, completed={self.completed})>"
+        )

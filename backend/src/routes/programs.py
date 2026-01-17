@@ -68,9 +68,35 @@ async def generate_program(
             # Generate program
             program = await agent.generate_lifting_program(profile, request)
 
-        # Save to database (if user exists)
-        # For now, we'll skip database save since we don't have auth yet
-        # This will be added in Phase 2
+        # Generate consistent UUID for the program
+        # We override the AI-generated ID to ensure consistency and avoid
+        # unpredictable formats like "prg_001_str_blk_4wk" or "strength-block-program-001"
+        program_id = str(uuid4())
+        program.id = program_id
+
+        # Save program to database
+        if db is not None:
+            try:
+                # Convert Pydantic model to dict for JSON storage
+                program_dict = program.model_dump()
+
+                # Create database record
+                db_program = Program(
+                    id=program_id,
+                    user_id=profile.id,
+                    title=program.title,
+                    program_json=program_dict,
+                )
+
+                db.add(db_program)
+                await db.flush()  # Flush to catch foreign key errors before commit
+                logger.info(f"Program saved to database: {program.id}")
+            except Exception as e:
+                await db.rollback()
+                logger.warning(f"Failed to save program to database: {e}")
+                # Continue anyway - program generation succeeded
+        else:
+            logger.warning("Database not configured - program not persisted")
 
         logger.info(f"Successfully generated program: {program.id}")
 
@@ -102,14 +128,13 @@ async def generate_program(
         )
 
 
-@router.get("/", response_model=list)
+@router.get("/user/{user_id}")
 async def list_programs(
     user_id: str,
     db: AsyncSession = Depends(get_db),
 ):
     """
     List all programs for a user.
-    TODO: Implement in Phase 3
 
     Args:
         user_id: User ID to fetch programs for
@@ -118,25 +143,132 @@ async def list_programs(
     Returns:
         List of program metadata
     """
-    # Placeholder for Phase 3
-    return []
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not configured"
+        )
+
+    try:
+        result = await db.execute(
+            select(Program)
+            .where(Program.user_id == user_id)
+            .order_by(Program.created_at.desc())
+        )
+        programs = result.scalars().all()
+
+        return [
+            {
+                "id": p.id,
+                "title": p.title,
+                "created_at": p.created_at.isoformat(),
+                "updated_at": p.updated_at.isoformat(),
+            }
+            for p in programs
+        ]
+    except Exception as e:
+        logger.error(f"Failed to fetch programs: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch programs"
+        )
 
 
-@router.get("/{program_id}", response_model=dict)
+@router.get("/{program_id}")
 async def get_program(
     program_id: str,
     db: AsyncSession = Depends(get_db),
 ):
     """
     Get a specific program by ID.
-    TODO: Implement in Phase 3
 
     Args:
         program_id: Program ID to fetch
         db: Database session
 
     Returns:
-        Complete program data
+        Complete program data with full JSON
     """
-    # Placeholder for Phase 3
-    raise HTTPException(status_code=404, detail="Program not found")
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not configured"
+        )
+
+    try:
+        result = await db.execute(
+            select(Program).where(Program.id == program_id)
+        )
+        program = result.scalar_one_or_none()
+
+        if not program:
+            raise HTTPException(status_code=404, detail="Program not found")
+
+        return {
+            "id": program.id,
+            "user_id": program.user_id,
+            "title": program.title,
+            "program": program.program_json,
+            "created_at": program.created_at.isoformat(),
+            "updated_at": program.updated_at.isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to fetch program: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to fetch program"
+        )
+
+
+@router.put("/{program_id}")
+async def update_program(
+    program_id: str,
+    program_data: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update an existing program (for making adjustments based on feedback).
+
+    Args:
+        program_id: Program ID to update
+        program_data: Updated program JSON
+        db: Database session
+
+    Returns:
+        Updated program data
+    """
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not configured"
+        )
+
+    try:
+        result = await db.execute(
+            select(Program).where(Program.id == program_id)
+        )
+        program = result.scalar_one_or_none()
+
+        if not program:
+            raise HTTPException(status_code=404, detail="Program not found")
+
+        # Update the program JSON
+        program.program_json = program_data
+        await db.commit()
+
+        logger.info(f"Program updated: {program_id}")
+
+        return {
+            "id": program.id,
+            "message": "Program updated successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to update program: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to update program"
+        )
