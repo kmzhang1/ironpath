@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { Select } from '@/components/ui/Select';
 import { useAppStore } from '@/store';
 import {
   User,
@@ -19,13 +20,21 @@ import {
 } from 'lucide-react';
 
 export function Profile() {
-  const { profile, updateOneRepMax, progressHistory, currentProgram } = useAppStore();
+  const { profile, updateOneRepMax, updateBiometrics, updateProfileName, progressHistory, currentProgram } = useAppStore();
 
   const [isEditingMaxes, setIsEditingMaxes] = useState(false);
   const [editedMaxes, setEditedMaxes] = useState({
     squat: profile?.oneRepMax.squat || 0,
     bench: profile?.oneRepMax.bench || 0,
     deadlift: profile?.oneRepMax.deadlift || 0,
+  });
+
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [editedPersonal, setEditedPersonal] = useState({
+    name: profile?.name || '',
+    age: profile?.biometrics.age || 0,
+    bodyweight: profile?.biometrics.bodyweight || 0,
+    sex: profile?.biometrics.sex || 'male' as 'male' | 'female',
   });
 
   useEffect(() => {
@@ -68,6 +77,32 @@ export function Profile() {
     setIsEditingMaxes(false);
   };
 
+  const handleSavePersonal = () => {
+    if (editedPersonal.name !== profile.name) {
+      updateProfileName(editedPersonal.name);
+    }
+    if (editedPersonal.age !== profile.biometrics.age ||
+        editedPersonal.bodyweight !== profile.biometrics.bodyweight ||
+        editedPersonal.sex !== profile.biometrics.sex) {
+      updateBiometrics({
+        age: editedPersonal.age,
+        bodyweight: editedPersonal.bodyweight,
+        sex: editedPersonal.sex,
+      });
+    }
+    setIsEditingPersonal(false);
+  };
+
+  const handleCancelPersonalEdit = () => {
+    setEditedPersonal({
+      name: profile.name,
+      age: profile.biometrics.age,
+      bodyweight: profile.biometrics.bodyweight,
+      sex: profile.biometrics.sex,
+    });
+    setIsEditingPersonal(false);
+  };
+
   // Calculate statistics
   const totalSessions = progressHistory?.sessions.length || 0;
   const completedSessions = progressHistory?.sessions.filter(s => s.completed).length || 0;
@@ -107,37 +142,115 @@ export function Profile() {
       {/* Personal Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User size={20} className="text-lime-400" />
-            Personal Information
-          </CardTitle>
-          <CardDescription>Your basic athlete details</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <User size={20} className="text-lime-400" />
+                Personal Information
+              </CardTitle>
+              <CardDescription>Your basic athlete details</CardDescription>
+            </div>
+            {!isEditingPersonal ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingPersonal(true)}
+                className="border-lime-500/50 text-lime-400 hover:bg-lime-500/10"
+              >
+                <Edit2 size={16} className="mr-2" />
+                Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelPersonalEdit}
+                  className="border-zinc-600 text-zinc-400"
+                >
+                  <X size={16} className="mr-2" />
+                  Cancel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSavePersonal}
+                  className="border-lime-500/50 text-lime-400 hover:bg-lime-500/10"
+                >
+                  <Save size={16} className="mr-2" />
+                  Save
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <Label>Name</Label>
-              <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
-                {profile.name}
-              </div>
+              <Label htmlFor="name">Name</Label>
+              {isEditingPersonal ? (
+                <Input
+                  id="name"
+                  value={editedPersonal.name}
+                  onChange={(e) => setEditedPersonal({ ...editedPersonal, name: e.target.value })}
+                  className="mt-1"
+                />
+              ) : (
+                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
+                  {profile.name}
+                </div>
+              )}
             </div>
             <div>
-              <Label>Age</Label>
-              <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
-                {profile.biometrics.age} years
-              </div>
+              <Label htmlFor="age">Age</Label>
+              {isEditingPersonal ? (
+                <Input
+                  id="age"
+                  type="number"
+                  value={editedPersonal.age}
+                  onChange={(e) => setEditedPersonal({ ...editedPersonal, age: parseInt(e.target.value) || 0 })}
+                  className="mt-1"
+                />
+              ) : (
+                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
+                  {profile.biometrics.age} years
+                </div>
+              )}
             </div>
             <div>
-              <Label>Bodyweight</Label>
-              <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
-                {profile.biometrics.bodyweight} {unit}
-              </div>
+              <Label htmlFor="bodyweight">Bodyweight</Label>
+              {isEditingPersonal ? (
+                <Input
+                  id="bodyweight"
+                  type="number"
+                  step="0.1"
+                  value={editedPersonal.bodyweight}
+                  onChange={(e) => setEditedPersonal({ ...editedPersonal, bodyweight: parseFloat(e.target.value) || 0 })}
+                  className="mt-1"
+                />
+              ) : (
+                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
+                  {profile.biometrics.bodyweight} {unit}
+                </div>
+              )}
             </div>
             <div>
-              <Label>Sex</Label>
-              <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200 capitalize">
-                {profile.biometrics.sex}
-              </div>
+              <Label htmlFor="sex">Sex</Label>
+              {isEditingPersonal ? (
+                <Select
+                  id="sex"
+                  value={editedPersonal.sex}
+                  onChange={(e) => setEditedPersonal({ ...editedPersonal, sex: e.target.value as 'male' | 'female' })}
+                  className="mt-1"
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </Select>
+              ) : (
+                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200 capitalize">
+                  {profile.biometrics.sex}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

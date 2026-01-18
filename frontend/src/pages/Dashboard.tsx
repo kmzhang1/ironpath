@@ -14,8 +14,9 @@ import { useAppStore } from '@/store';
 import { UtilitySidebar } from '@/components/layout/UtilitySidebar';
 import { generateExcelLog } from '@/utils/excelExport';
 import { submitWorkoutFeedback, performCheckIn } from '@/services/api';
-import { Dumbbell, MessageSquare } from 'lucide-react';
+import { Dumbbell, MessageSquare, BookOpen } from 'lucide-react';
 import type { FeedbackCategory } from '@/types';
+import { ProgramSelectorModal } from '@/components/ui/ProgramSelectorModal';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ export function Dashboard() {
     isOpen: boolean;
     type: 'daily' | 'weekly';
   }>({ isOpen: false, type: 'daily' });
+  const [showProgramSelector, setShowProgramSelector] = useState(false);
 
   if (!currentProgram || !profile) {
     navigate('/wizard');
@@ -111,7 +113,7 @@ export function Dashboard() {
       <main className="flex-1 lg:ml-64 transition-all duration-300">
         {/* Simple Header */}
         <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800">
-          <div className="px-6 h-16 flex items-center">
+          <div className="px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-lime-400 rounded-lg flex items-center justify-center lg:hidden">
                 <Dumbbell className="w-6 h-6 text-zinc-950" />
@@ -122,6 +124,17 @@ export function Dashboard() {
                 </h1>
               </div>
             </div>
+            {activeTab === 'dashboard' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowProgramSelector(true)}
+                className="border-lime-500/50 text-lime-400 hover:bg-lime-500/10"
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
+                Switch Program
+              </Button>
+            )}
           </div>
         </header>
 
@@ -142,7 +155,7 @@ export function Dashboard() {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
+            <Card className="card-hover animate-slide-up" style={{ animationDelay: '0.1s' }}>
               <CardHeader className="pb-3">
                 <CardDescription>Athlete</CardDescription>
                 <CardTitle className="text-xl">{profile.name}</CardTitle>
@@ -155,7 +168,7 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-hover animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <CardHeader className="pb-3">
                 <CardDescription>Squat 1RM</CardDescription>
                 <CardTitle className="text-xl font-mono text-lime-400">
@@ -164,7 +177,7 @@ export function Dashboard() {
               </CardHeader>
             </Card>
 
-            <Card>
+            <Card className="card-hover animate-slide-up" style={{ animationDelay: '0.3s' }}>
               <CardHeader className="pb-3">
                 <CardDescription>Bench 1RM</CardDescription>
                 <CardTitle className="text-xl font-mono text-lime-400">
@@ -173,7 +186,7 @@ export function Dashboard() {
               </CardHeader>
             </Card>
 
-            <Card>
+            <Card className="card-hover animate-slide-up" style={{ animationDelay: '0.4s' }}>
               <CardHeader className="pb-3">
                 <CardDescription>Deadlift 1RM</CardDescription>
                 <CardTitle className="text-xl font-mono text-lime-400">
@@ -183,7 +196,7 @@ export function Dashboard() {
             </Card>
           </div>
 
-          <Card className="bg-lime-400/5 border-lime-400/20">
+          <Card className="bg-lime-400/5 border-lime-400/20 card-hover animate-slide-up" style={{ animationDelay: '0.5s' }}>
             <CardHeader>
               <CardDescription className="text-lime-400">Total</CardDescription>
               <CardTitle className="text-3xl font-mono text-lime-400">
@@ -211,7 +224,7 @@ export function Dashboard() {
                   const scheduledDate = getScheduledDate(week.weekNumber, session.dayNumber);
 
                   return (
-                    <Card key={idx}>
+                    <Card key={idx} className="card-hover animate-fade-in">
                       <CardHeader>
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
@@ -301,6 +314,12 @@ export function Dashboard() {
         isOpen={checkInModal.isOpen}
         onClose={() => setCheckInModal({ ...checkInModal, isOpen: false })}
         onPerformCheckIn={handleCheckIn}
+      />
+
+      {/* Program Selector Modal */}
+      <ProgramSelectorModal
+        isOpen={showProgramSelector}
+        onClose={() => setShowProgramSelector(false)}
       />
     </div>
   );

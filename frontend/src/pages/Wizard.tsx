@@ -45,7 +45,7 @@ type Step4Data = z.infer<typeof step4Schema>;
 
 export function Wizard() {
   const navigate = useNavigate();
-  const { setProfile, setCurrentProgram } = useAppStore();
+  const { user, setProfile, addProgram } = useAppStore();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -53,7 +53,7 @@ export function Wizard() {
 
   // Form data
   const [step1Data, setStep1Data] = useState<Partial<Step1Data>>({
-    unit: 'kg',
+    unit: 'lbs',
     sex: 'male',
   });
   const [step2Data, setStep2Data] = useState<Partial<Step2Data>>({});
@@ -120,7 +120,7 @@ export function Wizard() {
     try {
       // Build profile
       const profile: LifterProfile = {
-        id: 'profile_' + Math.random().toString(36).substr(2, 9),
+        id: user?.id || 'profile_' + Math.random().toString(36).substr(2, 9),
         name: step1Data.name!,
         biometrics: {
           bodyweight: step1Data.bodyweight!,
@@ -149,7 +149,7 @@ export function Wizard() {
 
       // Save to store
       setProfile(profile);
-      setCurrentProgram(program);
+      addProgram(program);
 
       // Save to backend (mock)
       await saveProgram(program);
@@ -158,7 +158,8 @@ export function Wizard() {
       navigate('/dashboard');
     } catch (error) {
       console.error('Program generation failed:', error);
-      alert('Failed to generate program. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to generate program: ${errorMessage}\n\nPlease check the console for details.`);
     } finally {
       setIsGenerating(false);
     }
@@ -178,7 +179,7 @@ export function Wizard() {
 
         {/* Step Content */}
         {currentStep === 1 && (
-          <Card>
+          <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
               <CardDescription>Tell us about yourself</CardDescription>
@@ -258,7 +259,7 @@ export function Wizard() {
         )}
 
         {currentStep === 2 && (
-          <Card>
+          <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle>One-Rep Maxes</CardTitle>
               <CardDescription>
@@ -324,7 +325,7 @@ export function Wizard() {
         )}
 
         {currentStep === 3 && (
-          <Card>
+          <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle>Program Parameters</CardTitle>
               <CardDescription>Configure your training cycle</CardDescription>
@@ -398,7 +399,7 @@ export function Wizard() {
         )}
 
         {currentStep === 4 && (
-          <Card>
+          <Card className="animate-scale-in">
             <CardHeader>
               <CardTitle>Additional Details</CardTitle>
               <CardDescription>Help us customize your program (optional)</CardDescription>

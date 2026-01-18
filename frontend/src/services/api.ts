@@ -51,7 +51,44 @@ export async function loginWithGoogle(): Promise<User | void> {
     };
 
     mockAuthToken = 'mock_token_' + Math.random().toString(36).substr(2, 16);
+
+    // Sync user profile with backend
+    await syncUserProfile(mockUser);
+
     return mockUser;
+  }
+}
+
+/**
+ * Syncs user profile with backend database
+ * Should be called after successful authentication
+ */
+export async function syncUserProfile(user: User): Promise<void> {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  try {
+    const response = await fetch(`${apiUrl}/api/users/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        picture: user.picture,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Failed to sync user profile: ${errorData.detail || response.statusText}`);
+    }
+
+    console.log('✅ User profile synced with backend');
+  } catch (error) {
+    console.error('⚠️ Failed to sync user profile:', error);
+    // Don't throw - allow user to continue even if sync fails
   }
 }
 
@@ -84,6 +121,9 @@ export async function handleOAuthCallback(): Promise<User | null> {
     email: supabaseUser.email || '',
     picture: supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || '',
   };
+
+  // Sync user profile with backend
+  await syncUserProfile(user);
 
   return user;
 }
@@ -136,259 +176,58 @@ export async function logout(): Promise<void> {
 }
 
 /**
- * Generates a realistic powerlifting program based on request
- * Simulates 3-second AI processing delay
+ * Generates a powerlifting program by calling the backend API
  */
 export async function generateProgram(
   request: ProgramGenerationRequest,
   profile: LifterProfile
 ): Promise<FullProgram> {
-  await delay(3000); // Simulate AI "thinking"
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-  if (!mockAuthToken) {
-    throw new Error('Not authenticated');
-  }
+  console.log('🚀 Sending program generation request to:', `${apiUrl}/api/programs/generate`);
+  console.log('📝 Profile:', profile);
+  console.log('⚙️ Request params:', request);
 
-  const programId = 'prog_' + Math.random().toString(36).substr(2, 9);
-  const goalName = request.goal === 'peaking' ? 'Competition Peak' :
-                   request.goal === 'hypertrophy' ? 'Hypertrophy Block' :
-                   'Strength Development';
+  try {
 
-  // Generate realistic program structure
-  const program: FullProgram = {
-    id: programId,
-    createdAt: new Date().toISOString(),
-    title: `${goalName} - ${request.weeks} Week Program`,
-    weeks: [],
-  };
-
-  // Generate weeks
-  for (let weekNum = 1; weekNum <= request.weeks; weekNum++) {
-    const microcycle = {
-      weekNumber: weekNum,
-      sessions: [] as any[],
-    };
-
-    // Generate sessions based on daysPerWeek
-    for (let dayNum = 1; dayNum <= request.daysPerWeek; dayNum++) {
-      const session = generateSession(weekNum, dayNum, request, profile);
-      microcycle.sessions.push(session);
-    }
-
-    program.weeks.push(microcycle);
-  }
-
-  return program;
-}
-
-/**
- * Generates a single training session
- */
-function generateSession(
-  weekNum: number,
-  dayNum: number,
-  request: ProgramGenerationRequest,
-  _profile: LifterProfile
-) {
-  const focuses = ['Squat', 'Bench Press', 'Deadlift', 'Accessories'];
-  const focus = focuses[(dayNum - 1) % focuses.length];
-
-  // Calculate intensity progression
-  const weekProgress = (weekNum - 1) / (request.weeks - 1);
-  const baseRPE = request.goal === 'peaking' ? 8 :
-                  request.goal === 'hypertrophy' ? 7 : 7.5;
-
-  const rpe = request.goal === 'peaking'
-    ? Math.min(baseRPE + weekProgress * 2, 10) // Peak to RPE 10
-    : baseRPE + (weekProgress * 1.5); // Moderate progression
-
-  const session = {
-    dayNumber: dayNum,
-    focus: `${focus} ${request.goal === 'hypertrophy' ? 'Volume' : request.goal === 'peaking' ? 'Intensity' : 'Strength'}`,
-    exercises: [] as any[],
-  };
-
-  // Main lift
-  if (dayNum <= 3) {
-    const mainLift = dayNum === 1 ? 'Squat' : dayNum === 2 ? 'Bench Press' : 'Deadlift';
-
-    if (request.goal === 'hypertrophy') {
-      session.exercises.push({
-        name: mainLift,
-        sets: 4,
-        reps: '8-10',
-        rpeTarget: Math.round(rpe * 10) / 10,
-        restSeconds: 180,
-        notes: 'Controlled tempo, focus on muscle tension',
-      });
-    } else if (request.goal === 'peaking') {
-      const peakingReps = weekNum >= request.weeks - 2 ? '1-3' :
-                          weekNum >= request.weeks - 4 ? '3-5' : '5';
-      session.exercises.push({
-        name: mainLift,
-        sets: weekNum >= request.weeks - 2 ? 5 : 4,
-        reps: peakingReps,
-        rpeTarget: Math.round(rpe * 10) / 10,
-        restSeconds: 300,
-        notes: weekNum >= request.weeks - 2 ? 'Competition prep - peak intensity' : 'Build strength base',
-      });
-    } else {
-      session.exercises.push({
-        name: mainLift,
-        sets: 5,
-        reps: '5',
-        rpeTarget: Math.round(rpe * 10) / 10,
-        restSeconds: 240,
-        notes: 'Linear strength progression',
-      });
-    }
-
-    // Variation lift
-    const variations = {
-      'Squat': ['Pause Squat', 'Front Squat', 'Box Squat', 'Tempo Squat'],
-      'Bench Press': ['Close Grip Bench', 'Pause Bench Press', 'Incline Bench Press', 'Spoto Press'],
-      'Deadlift': ['Deficit Deadlift', 'Paused Deadlift', 'Romanian Deadlift', 'Block Pulls'],
-    };
-
-    const variationOptions = variations[mainLift as keyof typeof variations];
-    const variation = variationOptions[weekNum % variationOptions.length];
-
-    session.exercises.push({
-      name: variation,
-      sets: 3,
-      reps: request.goal === 'hypertrophy' ? '10-12' : '6-8',
-      rpeTarget: Math.max(rpe - 1, 6),
-      restSeconds: 180,
-      notes: 'Address weaknesses',
+    const response = await fetch(`${apiUrl}/api/programs/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        profile: profile,
+        request: request,
+      }),
     });
 
-    // Accessories
-    const accessories = getAccessories(mainLift, request.goal);
-    accessories.forEach((acc) => {
-      session.exercises.push(acc);
-    });
-  } else {
-    // Accessory day
-    const accessoryExercises = [
-      {
-        name: 'Leg Press',
-        sets: 3,
-        reps: '12-15',
-        rpeTarget: 7,
-        restSeconds: 120,
-      },
-      {
-        name: 'Leg Curl',
-        sets: 3,
-        reps: '12-15',
-        rpeTarget: 7,
-        restSeconds: 90,
-      },
-      {
-        name: 'Cable Row',
-        sets: 3,
-        reps: '10-12',
-        rpeTarget: 7,
-        restSeconds: 90,
-      },
-      {
-        name: 'Lat Pulldown',
-        sets: 3,
-        reps: '10-12',
-        rpeTarget: 7,
-        restSeconds: 90,
-      },
-      {
-        name: 'Ab Wheel Rollouts',
-        sets: 3,
-        reps: '10-15',
-        rpeTarget: 8,
-        restSeconds: 60,
-        notes: 'Core stability',
-      },
-    ];
+    console.log('📡 Response status:', response.status, response.statusText);
 
-    session.exercises = accessoryExercises;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Error response:', errorData);
+      const errorMessage = errorData.detail?.error || errorData.detail || 'Failed to generate program';
+      throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+    console.log('✅ Program generated successfully:', data);
+    return data.program;
+  } catch (error) {
+    console.error('💥 Program generation error:', error);
+    throw error;
   }
-
-  return session;
 }
 
-/**
- * Returns accessory exercises based on main lift and goal
- */
-function getAccessories(mainLift: string, goal: string) {
-  const accessories = [];
-
-  if (mainLift === 'Squat') {
-    accessories.push(
-      {
-        name: 'Bulgarian Split Squat',
-        sets: 3,
-        reps: goal === 'hypertrophy' ? '10-12' : '8-10',
-        rpeTarget: 7,
-        restSeconds: 120,
-        notes: 'Each leg',
-      },
-      {
-        name: 'Leg Extension',
-        sets: 3,
-        reps: '12-15',
-        rpeTarget: 8,
-        restSeconds: 90,
-      }
-    );
-  } else if (mainLift === 'Bench Press') {
-    accessories.push(
-      {
-        name: 'Dumbbell Bench Press',
-        sets: 3,
-        reps: goal === 'hypertrophy' ? '10-12' : '8-10',
-        rpeTarget: 7,
-        restSeconds: 120,
-      },
-      {
-        name: 'Tricep Dips',
-        sets: 3,
-        reps: '10-12',
-        rpeTarget: 8,
-        restSeconds: 90,
-      }
-    );
-  } else if (mainLift === 'Deadlift') {
-    accessories.push(
-      {
-        name: 'Barbell Row',
-        sets: 3,
-        reps: '8-10',
-        rpeTarget: 7,
-        restSeconds: 120,
-      },
-      {
-        name: 'Good Mornings',
-        sets: 3,
-        reps: '10-12',
-        rpeTarget: 7,
-        restSeconds: 90,
-        notes: 'Posterior chain',
-      }
-    );
-  }
-
-  return accessories;
-}
 
 /**
- * Saves program (mock - just returns success)
+ * Saves program (no-op - backend already saves it)
+ * This function is kept for backward compatibility but does nothing
+ * since the backend saves the program when generating it.
  */
 export async function saveProgram(program: FullProgram): Promise<{ success: boolean }> {
   await delay(500);
-
-  if (!mockAuthToken) {
-    throw new Error('Not authenticated');
-  }
-
-  console.log('Program saved:', program.id);
+  console.log('Program already saved to backend:', program.id);
   return { success: true };
 }
 
@@ -538,4 +377,45 @@ export async function performCheckIn(
 
   console.log('Check-in performed:', checkIn);
   return checkIn;
+}
+
+/**
+ * Fetch all programs for a user from the backend
+ */
+export async function getUserPrograms(userId: string): Promise<FullProgram[]> {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  try {
+    // First get the list of program metadata
+    const listResponse = await fetch(`${apiUrl}/api/programs/user/${userId}`);
+
+    if (!listResponse.ok) {
+      if (listResponse.status === 404) {
+        return [];
+      }
+      throw new Error(`Failed to fetch programs: ${listResponse.statusText}`);
+    }
+
+    const programList = await listResponse.json();
+
+    if (!programList || programList.length === 0) {
+      return [];
+    }
+
+    // Fetch full program data for each program
+    const programs: FullProgram[] = [];
+    for (const programMeta of programList) {
+      const programResponse = await fetch(`${apiUrl}/api/programs/${programMeta.id}`);
+
+      if (programResponse.ok) {
+        const programData = await programResponse.json();
+        programs.push(programData.program);
+      }
+    }
+
+    return programs;
+  } catch (error) {
+    console.error('Failed to fetch user programs:', error);
+    return [];
+  }
 }

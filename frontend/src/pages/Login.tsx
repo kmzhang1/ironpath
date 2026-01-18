@@ -3,14 +3,53 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { useAppStore } from '@/store';
-import { loginWithGoogle, handleOAuthCallback } from '@/services/api';
+import { loginWithGoogle, handleOAuthCallback, getUserPrograms } from '@/services/api';
 import { Dumbbell, Loader2, AlertCircle } from 'lucide-react';
 
 export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const setUser = useAppStore((state) => state.setUser);
+  const { user, setUser, addProgram, setCurrentProgram } = useAppStore();
+
+  // Helper function to check for existing programs and route accordingly
+  const routeAfterLogin = async (userId: string) => {
+    try {
+      // Fetch existing programs from backend
+      const programs = await getUserPrograms(userId);
+
+      if (programs.length > 0) {
+        // User has existing programs - load them and go to dashboard
+        console.log(`Found ${programs.length} existing program(s) for user`);
+
+        // Load all programs into the store
+        programs.forEach((program) => {
+          addProgram(program);
+        });
+
+        // Set the most recent program as current
+        setCurrentProgram(programs[0]);
+
+        // Navigate to dashboard
+        navigate('/dashboard');
+      } else {
+        // No programs - take them to wizard
+        console.log('No existing programs found, routing to wizard');
+        navigate('/wizard');
+      }
+    } catch (err) {
+      console.error('Error checking for programs:', err);
+      // On error, default to wizard
+      navigate('/wizard');
+    }
+  };
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      routeAfterLogin(user.id);
+    }
+  }, [user]);
 
   // Handle OAuth callback when returning from Google
   useEffect(() => {
@@ -25,7 +64,7 @@ export function Login() {
           const user = await handleOAuthCallback();
           if (user) {
             setUser(user);
-            navigate('/wizard');
+            await routeAfterLogin(user.id);
           }
         } catch (err) {
           console.error('OAuth callback error:', err);
@@ -46,10 +85,10 @@ export function Login() {
     try {
       const result = await loginWithGoogle();
 
-      // If using mock mode (returns a user), navigate immediately
+      // If using mock mode (returns a user), navigate based on programs
       if (result) {
         setUser(result);
-        navigate('/wizard');
+        await routeAfterLogin(result.id);
       }
       // Otherwise, Supabase will redirect to Google (function returns void)
     } catch (err) {

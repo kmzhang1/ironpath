@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Input } from './Input';
 import { Button } from './Button';
+import { ExerciseEditModal } from './ExerciseEditModal';
 import { useAppStore } from '@/store';
 import { calculateWorkingWeight, matchExerciseToLift } from '@/utils/liftingMath';
 import { Edit2, Save, X, CheckCircle } from 'lucide-react';
@@ -24,31 +25,27 @@ interface Props {
 
 export function EditableExerciseTable({ weekNumber, dayNumber, exercises, sessionCompleted, onCompleteSession }: Props) {
   const { profile, updateExercise } = useAppStore();
-  const [editingCell, setEditingCell] = useState<string | null>(null);
-  const [editValues, setEditValues] = useState<Record<string, any>>({});
+  const [editingCell, setEditingCell] = useState<{
+    exerciseIdx: number;
+    field: string;
+    value: any;
+    label: string;
+    type: 'text' | 'number';
+  } | null>(null);
 
-  const handleEdit = (exerciseIdx: number, field: string, value: any) => {
-    const key = `${exerciseIdx}-${field}`;
-    setEditingCell(key);
-    setEditValues({ ...editValues, [key]: value });
+  const handleEdit = (exerciseIdx: number, field: string, value: any, label: string, type: 'text' | 'number' = 'text') => {
+    setEditingCell({ exerciseIdx, field, value, label, type });
   };
 
-  const handleSave = (exerciseIdx: number, field: string) => {
-    const key = `${exerciseIdx}-${field}`;
-    const value = editValues[key];
-
-    if (value !== undefined) {
-      updateExercise(weekNumber, dayNumber, exerciseIdx, { [field]: value });
+  const handleSave = (field: string, value: any) => {
+    if (editingCell && value !== undefined) {
+      updateExercise(weekNumber, dayNumber, editingCell.exerciseIdx, { [field]: value });
     }
-
     setEditingCell(null);
-    delete editValues[key];
   };
 
-  const handleCancel = (exerciseIdx: number, field: string) => {
-    const key = `${exerciseIdx}-${field}`;
+  const handleCloseModal = () => {
     setEditingCell(null);
-    delete editValues[key];
   };
 
   const getCalculatedWeight = (exercise: Exercise): string => {
@@ -72,54 +69,13 @@ export function EditableExerciseTable({ weekNumber, dayNumber, exercises, sessio
     exerciseIdx: number,
     field: string,
     value: any,
+    label: string,
     type: 'text' | 'number' = 'text'
   ) => {
-    const key = `${exerciseIdx}-${field}`;
-    const isEditing = editingCell === key;
-
-    if (isEditing) {
-      return (
-        <div className="flex items-center gap-1">
-          <Input
-            type={type}
-            value={editValues[key] ?? value}
-            onChange={(e) =>
-              setEditValues({
-                ...editValues,
-                [key]: type === 'number' ? parseFloat(e.target.value) : e.target.value,
-              })
-            }
-            className="h-7 w-20 text-xs"
-            autoFocus
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleSave(exerciseIdx, field);
-              if (e.key === 'Escape') handleCancel(exerciseIdx, field);
-            }}
-          />
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
-            onClick={() => handleSave(exerciseIdx, field)}
-          >
-            <Save className="h-3 w-3 text-lime-400" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
-            onClick={() => handleCancel(exerciseIdx, field)}
-          >
-            <X className="h-3 w-3 text-zinc-400" />
-          </Button>
-        </div>
-      );
-    }
-
     return (
       <div
-        className="flex items-center gap-2 cursor-pointer group hover:bg-zinc-800/50 px-2 py-1 rounded"
-        onClick={() => handleEdit(exerciseIdx, field, value)}
+        className="flex items-center gap-2 cursor-pointer group hover:bg-zinc-800/50 px-2 py-1 rounded transition-all"
+        onClick={() => handleEdit(exerciseIdx, field, value, label, type)}
       >
         <span className={field === 'rpeTarget' || field === 'sets' ? 'font-mono text-lime-400' : ''}>
           {value}
@@ -148,16 +104,16 @@ export function EditableExerciseTable({ weekNumber, dayNumber, exercises, sessio
             {exercises.map((exercise, idx) => (
               <tr key={idx} className="border-b border-zinc-800 last:border-0">
                 <td className="py-3 pr-4 text-sm text-zinc-50">
-                  {renderEditableCell(idx, 'name', exercise.name)}
+                  {renderEditableCell(idx, 'name', exercise.name, 'Exercise Name')}
                 </td>
                 <td className="py-3 px-4 text-sm text-center">
-                  {renderEditableCell(idx, 'sets', exercise.sets, 'number')}
+                  {renderEditableCell(idx, 'sets', exercise.sets, 'Sets', 'number')}
                 </td>
                 <td className="py-3 px-4 text-sm text-center">
-                  {renderEditableCell(idx, 'reps', exercise.reps)}
+                  {renderEditableCell(idx, 'reps', exercise.reps, 'Reps')}
                 </td>
                 <td className="py-3 px-4 text-sm text-center">
-                  {renderEditableCell(idx, 'rpeTarget', exercise.rpeTarget, 'number')}
+                  {renderEditableCell(idx, 'rpeTarget', exercise.rpeTarget, 'RPE', 'number')}
                 </td>
                 <td className="py-3 px-4 text-sm font-mono text-lime-400 text-center">
                   {getCalculatedWeight(exercise)}
@@ -168,11 +124,12 @@ export function EditableExerciseTable({ weekNumber, dayNumber, exercises, sessio
                     'restSeconds',
                     `${Math.floor(exercise.restSeconds / 60)}'${(exercise.restSeconds % 60)
                       .toString()
-                      .padStart(2, '0')}"`
+                      .padStart(2, '0')}"`,
+                    'Rest Time'
                   )}
                 </td>
                 <td className="py-3 pl-4 text-sm text-zinc-500">
-                  {renderEditableCell(idx, 'notes', exercise.notes || '-')}
+                  {renderEditableCell(idx, 'notes', exercise.notes || '-', 'Notes')}
                 </td>
               </tr>
             ))}
@@ -197,6 +154,19 @@ export function EditableExerciseTable({ weekNumber, dayNumber, exercises, sessio
             )}
           </Button>
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingCell && (
+        <ExerciseEditModal
+          isOpen={!!editingCell}
+          onClose={handleCloseModal}
+          onSave={handleSave}
+          field={editingCell.field}
+          currentValue={editingCell.value}
+          fieldLabel={editingCell.label}
+          type={editingCell.type}
+        />
       )}
     </div>
   );

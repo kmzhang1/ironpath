@@ -20,10 +20,15 @@ interface AppState {
   profile: LifterProfile | null;
   setProfile: (profile: LifterProfile | null) => void;
   updateOneRepMax: (lift: 'squat' | 'bench' | 'deadlift', value: number) => void;
+  updateBiometrics: (updates: Partial<LifterProfile['biometrics']>) => void;
+  updateProfileName: (name: string) => void;
 
   // Program
+  programs: FullProgram[];
   currentProgram: FullProgram | null;
+  addProgram: (program: FullProgram) => void;
   setCurrentProgram: (program: FullProgram | null) => void;
+  selectProgramById: (programId: string) => void;
   updateExercise: (weekNum: number, dayNum: number, exerciseIdx: number, updates: Partial<any>) => void;
 
   // Progress Tracking
@@ -95,22 +100,70 @@ export const useAppStore = create<AppState>()(
           });
         }
       },
+      updateBiometrics: (updates) => {
+        const profile = get().profile;
+        if (!profile) return;
+
+        const newProfile = {
+          ...profile,
+          biometrics: {
+            ...profile.biometrics,
+            ...updates,
+          },
+        };
+
+        set({ profile: newProfile });
+      },
+      updateProfileName: (name) => {
+        const profile = get().profile;
+        if (!profile) return;
+
+        set({ profile: { ...profile, name } });
+      },
 
       // Program
+      programs: [],
       currentProgram: null,
+      addProgram: (program) => {
+        const programs = get().programs;
+        set({
+          programs: [...programs, program],
+          currentProgram: program
+        });
+
+        // Initialize progress history for new program
+        set({
+          progressHistory: {
+            programId: program.id,
+            sessions: [],
+            oneRepMaxHistory: [],
+            checkIns: [],
+          },
+        });
+      },
       setCurrentProgram: (currentProgram) => {
         set({ currentProgram });
 
-        // Initialize progress history for new program
+        // Initialize progress history for new program if not exists
         if (currentProgram) {
-          set({
-            progressHistory: {
-              programId: currentProgram.id,
-              sessions: [],
-              oneRepMaxHistory: [],
-              checkIns: [],
-            },
-          });
+          const history = get().progressHistory;
+          if (!history || history.programId !== currentProgram.id) {
+            set({
+              progressHistory: {
+                programId: currentProgram.id,
+                sessions: [],
+                oneRepMaxHistory: [],
+                checkIns: [],
+              },
+            });
+          }
+        }
+      },
+      selectProgramById: (programId) => {
+        const programs = get().programs;
+        const program = programs.find(p => p.id === programId);
+        if (program) {
+          get().setCurrentProgram(program);
         }
       },
       updateExercise: (weekNum, dayNum, exerciseIdx, updates) => {
@@ -270,6 +323,7 @@ export const useAppStore = create<AppState>()(
       reset: () => set({
         user: null,
         profile: null,
+        programs: [],
         currentProgram: null,
         progressHistory: null,
         isSidebarOpen: false,
@@ -280,6 +334,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         user: state.user,
         profile: state.profile,
+        programs: state.programs,
         currentProgram: state.currentProgram,
         progressHistory: state.progressHistory,
       }),

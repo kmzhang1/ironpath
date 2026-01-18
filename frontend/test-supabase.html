@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Configuration Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        .test-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .status.success { background: #16a34a; color: white; }
+        .status.error { background: #dc2626; color: white; }
+        .status.warning { background: #f59e0b; color: white; }
+        .status.pending { background: #6b7280; color: white; }
+        pre {
+            background: #0a0a0a;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #a3e635;
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #84cc16;
+        }
+        button:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+        h1 { color: #a3e635; }
+        h2 { color: #fff; margin-top: 0; }
+        .code {
+            font-family: monospace;
+            background: #0a0a0a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Supabase & Google OAuth Configuration Test</h1>
+    <p>This page will verify your Supabase and Google Cloud setup.</p>
+
+    <!-- Environment Variables Check -->
+    <div class="test-card">
+        <h2>1. Environment Variables</h2>
+        <div id="env-check">
+            <span class="status pending">Checking...</span>
+        </div>
+        <div id="env-details" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- Supabase Connection Check -->
+    <div class="test-card">
+        <h2>2. Supabase Connection</h2>
+        <div id="supabase-check">
+            <span class="status pending">Checking...</span>
+        </div>
+        <div id="supabase-details" style="margin-top: 12px;"></div>
+    </div>
+
+    <!-- Google OAuth Provider Check -->
+    <div class="test-card">
+        <h2>3. Google OAuth Provider</h2>
+        <div id="oauth-check">
+            <span class="status pending">Not tested yet</span>
+        </div>
+        <div id="oauth-details" style="margin-top: 12px;">
+            <button id="test-oauth-btn">Test Google OAuth Flow</button>
+            <p style="font-size: 14px; color: #9ca3af;">
+                This will redirect you to Google sign-in. Make sure you've configured the OAuth credentials.
+            </p>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    <div class="test-card">
+        <h2>📋 Setup Checklist</h2>
+        <div id="checklist"></div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const SUPABASE_URL = 'https://xkoknpqgymqwcoakkdcl.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhrb2tucHFneW1xd2NvYWtrZGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczNTczNjksImV4cCI6MjA1MjkzMzM2OX0.5bTCKhT6NWN_R0CtPhwNVRHqkZl22EPILGWl2LlPiJQ';
+
+        let supabase;
+        const results = {
+            envVars: false,
+            supabaseConnection: false,
+            oauthProvider: false
+        };
+
+        // Test 1: Environment Variables
+        function testEnvVars() {
+            const envCheck = document.getElementById('env-check');
+            const envDetails = document.getElementById('env-details');
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr style="border-bottom: 1px solid #333;"><th style="text-align: left; padding: 8px;">Variable</th><th style="text-align: left; padding: 8px;">Status</th><th style="text-align: left; padding: 8px;">Value</th></tr>';
+
+            // Check SUPABASE_URL
+            const urlStatus = SUPABASE_URL && SUPABASE_URL.startsWith('https://') ? '✅' : '❌';
+            const urlPreview = SUPABASE_URL ? SUPABASE_URL.substring(0, 40) + '...' : 'Not set';
+            html += `<tr><td style="padding: 8px;"><span class="code">VITE_SUPABASE_URL</span></td><td style="padding: 8px;">${urlStatus}</td><td style="padding: 8px; font-family: monospace; font-size: 12px;">${urlPreview}</td></tr>`;
+
+            // Check SUPABASE_ANON_KEY
+            const keyStatus = SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.startsWith('eyJ') ? '✅' : '❌';
+            const keyPreview = SUPABASE_ANON_KEY ? SUPABASE_ANON_KEY.substring(0, 30) + '...' : 'Not set';
+            html += `<tr><td style="padding: 8px;"><span class="code">VITE_SUPABASE_ANON_KEY</span></td><td style="padding: 8px;">${keyStatus}</td><td style="padding: 8px; font-family: monospace; font-size: 12px;">${keyPreview}</td></tr>`;
+
+            html += '</table>';
+            envDetails.innerHTML = html;
+
+            if (SUPABASE_URL && SUPABASE_ANON_KEY && urlStatus === '✅' && keyStatus === '✅') {
+                envCheck.innerHTML = '<span class="status success">✓ Configured</span>';
+                results.envVars = true;
+            } else {
+                envCheck.innerHTML = '<span class="status error">✗ Missing or Invalid</span>';
+            }
+        }
+
+        // Test 2: Supabase Connection
+        async function testSupabaseConnection() {
+            const supabaseCheck = document.getElementById('supabase-check');
+            const supabaseDetails = document.getElementById('supabase-details');
+
+            supabaseCheck.innerHTML = '<span class="status pending">Testing...</span>';
+
+            try {
+                supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                // Try to get session (won't error even if not authenticated)
+                const { data, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    throw error;
+                }
+
+                supabaseCheck.innerHTML = '<span class="status success">✓ Connected</span>';
+                supabaseDetails.innerHTML = `
+                    <p style="color: #10b981; margin: 8px 0;">Successfully connected to Supabase!</p>
+                    <p style="font-size: 14px; color: #9ca3af;">
+                        Project URL: <span class="code">${SUPABASE_URL}</span><br>
+                        Auth session: ${data.session ? '✓ Active' : '○ None (not logged in yet)'}
+                    </p>
+                `;
+                results.supabaseConnection = true;
+            } catch (error) {
+                supabaseCheck.innerHTML = '<span class="status error">✗ Failed</span>';
+                supabaseDetails.innerHTML = `
+                    <p style="color: #ef4444; margin: 8px 0;">Connection failed!</p>
+                    <pre>${error.message}</pre>
+                    <p style="font-size: 14px; color: #f59e0b;">Check that your Supabase URL and anon key are correct.</p>
+                `;
+            }
+        }
+
+        // Test 3: Google OAuth
+        document.getElementById('test-oauth-btn').addEventListener('click', async () => {
+            const oauthCheck = document.getElementById('oauth-check');
+            const oauthDetails = document.getElementById('oauth-details');
+            const btn = document.getElementById('test-oauth-btn');
+
+            btn.disabled = true;
+            oauthCheck.innerHTML = '<span class="status pending">Testing...</span>';
+
+            try {
+                if (!supabase) {
+                    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                }
+
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin + '/test-supabase.html',
+                        queryParams: {
+                            access_type: 'offline',
+                            prompt: 'consent',
+                        },
+                    },
+                });
+
+                if (error) {
+                    throw error;
+                }
+
+                // If we get here, redirect is happening
+                oauthCheck.innerHTML = '<span class="status success">✓ Redirecting to Google...</span>';
+            } catch (error) {
+                oauthCheck.innerHTML = '<span class="status error">✗ Failed</span>';
+                oauthDetails.innerHTML = `
+                    <p style="color: #ef4444; margin: 8px 0;">OAuth test failed!</p>
+                    <pre>${error.message}</pre>
+                    <p style="font-size: 14px; color: #f59e0b;">
+                        Common issues:<br>
+                        • Google provider not enabled in Supabase<br>
+                        • Google OAuth credentials not configured<br>
+                        • Redirect URI not registered in Google Cloud Console
+                    </p>
+                `;
+                btn.disabled = false;
+            }
+        });
+
+        // Check for OAuth callback
+        async function checkOAuthCallback() {
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            const oauthCheck = document.getElementById('oauth-check');
+            const oauthDetails = document.getElementById('oauth-details');
+
+            console.log('Checking for OAuth callback...');
+            console.log('Hash:', window.location.hash);
+            console.log('Has access_token:', hashParams.has('access_token'));
+
+            // Check if we have a hash with auth data
+            if (hashParams.has('access_token') || window.location.hash.includes('access_token')) {
+                oauthCheck.innerHTML = '<span class="status pending">Processing callback...</span>';
+
+                try {
+                    console.log('OAuth callback detected!');
+
+                    // Let Supabase auth listener handle the hash automatically
+                    // The client should pick up the hash via detectSessionInUrl
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+
+                    // Try multiple approaches to get the session
+                    console.log('Attempt 1: getSession()');
+                    let { data: { session }, error } = await supabase.auth.getSession();
+
+                    if (!session && !error) {
+                        console.log('Attempt 2: getUser()');
+                        const { data: { user }, error: userError } = await supabase.auth.getUser();
+                        if (user) {
+                            // Try getting session again
+                            const result = await supabase.auth.getSession();
+                            session = result.data.session;
+                            error = result.error;
+                        } else {
+                            error = userError;
+                        }
+                    }
+
+                    if (!session && !error) {
+                        // Last resort: manually set session from hash
+                        console.log('Attempt 3: Manual token extraction');
+                        const accessToken = hashParams.get('access_token');
+                        const refreshToken = hashParams.get('refresh_token');
+
+                        if (accessToken) {
+                            console.log('Found tokens in hash, attempting setSession');
+                            const { data, error: setError } = await supabase.auth.setSession({
+                                access_token: accessToken,
+                                refresh_token: refreshToken || ''
+                            });
+                            session = data.session;
+                            error = setError;
+                        }
+                    }
+
+                    if (error) {
+                        console.error('Session error:', error);
+                        throw error;
+                    }
+
+                    if (session && session.user) {
+                        console.log('Session established!', session.user.email);
+                        oauthCheck.innerHTML = '<span class="status success">✓ OAuth Working!</span>';
+                        oauthDetails.innerHTML = `
+                            <p style="color: #10b981; margin: 8px 0; font-weight: 600;">✓ Successfully authenticated with Google!</p>
+                            <p style="font-size: 14px; background: #0a0a0a; padding: 12px; border-radius: 4px; margin: 12px 0;">
+                                <strong>User ID:</strong> <span class="code">${session.user.id}</span><br>
+                                <strong>Email:</strong> <span class="code">${session.user.email}</span><br>
+                                <strong>Name:</strong> <span class="code">${session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'N/A'}</span><br>
+                                <strong>Provider:</strong> <span class="code">Google</span>
+                            </p>
+                            <button onclick="location.href='test-supabase.html'">Clear & Test Again</button>
+                            <button onclick="window.supabase.auth.signOut().then(() => location.href='test-supabase.html')">Sign Out</button>
+                        `;
+                        results.oauthProvider = true;
+                        updateChecklist();
+
+                        // Clean URL
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } else {
+                        throw new Error('No session found after OAuth redirect');
+                    }
+                } catch (error) {
+                    console.error('OAuth callback error:', error);
+                    oauthCheck.innerHTML = '<span class="status error">✗ Callback Failed</span>';
+                    oauthDetails.innerHTML = `
+                        <p style="color: #ef4444; margin: 8px 0;">OAuth callback processing failed!</p>
+                        <pre>${error.message}</pre>
+                        <p style="font-size: 14px; color: #f59e0b; margin-top: 12px;">
+                            Debug info:<br>
+                            • Hash has access_token: ${hashParams.has('access_token') ? 'Yes' : 'No'}<br>
+                            • Check browser console (F12) for detailed logs<br><br>
+                            Common issues:<br>
+                            • Session not established after redirect<br>
+                            • Token exchange failed<br>
+                            • PKCE flow issue<br>
+                            • Redirect URL mismatch
+                        </p>
+                        <button onclick="location.href='test-supabase.html'">Try Again</button>
+                        <button onclick="window.open('/auth-debug.html', '_blank')">Open Debug Page</button>
+                    `;
+                }
+            }
+        }
+
+        // Update checklist
+        function updateChecklist() {
+            const checklist = document.getElementById('checklist');
+
+            const items = [
+                { name: 'Environment variables configured', status: results.envVars },
+                { name: 'Supabase connection working', status: results.supabaseConnection },
+                { name: 'Google OAuth provider enabled', status: results.oauthProvider },
+            ];
+
+            let html = '<ul style="list-style: none; padding: 0;">';
+            items.forEach(item => {
+                const icon = item.status ? '✅' : item.status === false ? '❌' : '○';
+                html += `<li style="padding: 8px 0;">${icon} ${item.name}</li>`;
+            });
+            html += '</ul>';
+
+            if (results.envVars && results.supabaseConnection && results.oauthProvider) {
+                html += '<p style="color: #10b981; font-weight: 600; margin-top: 16px;">🎉 All checks passed! Your setup is complete.</p>';
+            } else if (results.envVars && results.supabaseConnection) {
+                html += '<p style="color: #f59e0b; margin-top: 16px;">⚠️ Almost there! Test the Google OAuth flow to complete setup.</p>';
+            }
+
+            checklist.innerHTML = html;
+        }
+
+        // Run tests on load
+        window.addEventListener('load', async () => {
+            testEnvVars();
+            await testSupabaseConnection();
+            await checkOAuthCallback();
+            updateChecklist();
+        });
+
+        // Expose supabase for debugging
+        window.supabase = supabase;
+    </script>
+</body>
+</html>

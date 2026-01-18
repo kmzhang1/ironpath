@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Debug</title>
+    <style>
+        body {
+            font-family: monospace;
+            background: #0a0a0a;
+            color: #0f0;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 { color: #0ff; }
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .warning { color: #ff0; }
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow-x: auto;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 OAuth Callback Debugger</h1>
+
+    <div class="section">
+        <h2>Current URL</h2>
+        <pre id="url-info"></pre>
+    </div>
+
+    <div class="section">
+        <h2>URL Hash Parameters</h2>
+        <pre id="hash-params"></pre>
+    </div>
+
+    <div class="section">
+        <h2>URL Search Parameters</h2>
+        <pre id="search-params"></pre>
+    </div>
+
+    <div class="section">
+        <h2>Supabase Session Status</h2>
+        <pre id="session-info">Loading...</pre>
+    </div>
+
+    <div class="section">
+        <h2>Console Logs</h2>
+        <pre id="console-logs"></pre>
+    </div>
+
+    <script type="module">
+        const logs = [];
+        function log(msg, type = 'info') {
+            const timestamp = new Date().toISOString();
+            logs.push(`[${timestamp}] [${type.toUpperCase()}] ${msg}`);
+            document.getElementById('console-logs').textContent = logs.join('\n');
+            console.log(`[${type}]`, msg);
+        }
+
+        // Display URL info
+        document.getElementById('url-info').textContent =
+            `Full URL: ${window.location.href}\n` +
+            `Pathname: ${window.location.pathname}\n` +
+            `Hash: ${window.location.hash}\n` +
+            `Search: ${window.location.search}\n` +
+            `Origin: ${window.location.origin}`;
+
+        // Display hash params
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        let hashParamsText = '';
+        if (hashParams.toString()) {
+            for (const [key, value] of hashParams.entries()) {
+                hashParamsText += `${key}: ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}\n`;
+            }
+        } else {
+            hashParamsText = 'No hash parameters found';
+        }
+        document.getElementById('hash-params').textContent = hashParamsText;
+
+        // Display search params
+        const searchParams = new URLSearchParams(window.location.search);
+        let searchParamsText = '';
+        if (searchParams.toString()) {
+            for (const [key, value] of searchParams.entries()) {
+                searchParamsText += `${key}: ${value}\n`;
+            }
+        } else {
+            searchParamsText = 'No search parameters found';
+        }
+        document.getElementById('search-params').textContent = searchParamsText;
+
+        // Check Supabase session
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const SUPABASE_URL = 'https://xkoknpqgymqwcoakkdcl.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhrb2tucHFneW1xd2NvYWtrZGNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzczNTczNjksImV4cCI6MjA1MjkzMzM2OX0.5bTCKhT6NWN_R0CtPhwNVRHqkZl22EPILGWl2LlPiJQ';
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                flowType: 'pkce',
+            },
+        });
+
+        log('Supabase client created');
+
+        // Listen for auth state changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            log(`Auth event: ${event}`, 'info');
+            if (session) {
+                log(`Session user: ${session.user.email}`, 'success');
+            }
+        });
+
+        async function checkSession() {
+            try {
+                log('Checking for session...');
+
+                // Wait a bit for Supabase to process the hash
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const { data: { session }, error } = await supabase.auth.getSession();
+
+                if (error) {
+                    log(`Session error: ${error.message}`, 'error');
+                    document.getElementById('session-info').innerHTML =
+                        `<span class="error">Error: ${error.message}</span>\n\n${JSON.stringify(error, null, 2)}`;
+                    return;
+                }
+
+                if (session) {
+                    log('Session found!', 'success');
+                    document.getElementById('session-info').innerHTML =
+                        `<span class="success">✓ Session Active</span>\n\n` +
+                        `User ID: ${session.user.id}\n` +
+                        `Email: ${session.user.email}\n` +
+                        `Provider: ${session.user.app_metadata?.provider || 'unknown'}\n` +
+                        `Name: ${session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'N/A'}\n\n` +
+                        `Full user object:\n${JSON.stringify(session.user, null, 2)}`;
+                } else {
+                    log('No session found', 'warning');
+                    document.getElementById('session-info').innerHTML =
+                        `<span class="warning">No active session</span>\n\n` +
+                        `This could mean:\n` +
+                        `1. Not logged in yet\n` +
+                        `2. OAuth callback hasn't been processed\n` +
+                        `3. Token exchange failed\n\n` +
+                        `Check the hash/search parameters above.`;
+                }
+            } catch (err) {
+                log(`Exception: ${err.message}`, 'error');
+                document.getElementById('session-info').innerHTML =
+                    `<span class="error">Exception: ${err.message}</span>\n\n${err.stack}`;
+            }
+        }
+
+        // Check immediately and after delay
+        checkSession();
+
+        // Also re-check after 3 seconds
+        setTimeout(() => {
+            log('Re-checking session after 3s...');
+            checkSession();
+        }, 3000);
+
+        // Expose for debugging
+        window.supabase = supabase;
+        window.checkSession = checkSession;
+    </script>
+</body>
+</html>

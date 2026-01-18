@@ -5,8 +5,8 @@ import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
 import { useAppStore } from '@/store';
-import { calculateOneRepMax, calculateDOTS } from '@/utils/liftingMath';
-import { X, Calculator, Award } from 'lucide-react';
+import { calculateOneRepMax, calculateDOTS, calculateWorkingWeight } from '@/utils/liftingMath';
+import { X, Calculator, Award, ArrowRight } from 'lucide-react';
 
 export function UtilitySidebar() {
   const { isSidebarOpen, toggleSidebar } = useAppStore();
@@ -24,6 +24,14 @@ export function UtilitySidebar() {
   const [dotsUnit, setDotsUnit] = useState<'kg' | 'lbs'>('kg');
   const [dotsScore, setDotsScore] = useState<number | null>(null);
 
+  // Have/Want RPE Calculator State
+  const [haveWeight, setHaveWeight] = useState<number>(100);
+  const [haveReps, setHaveReps] = useState<number>(5);
+  const [haveRPE, setHaveRPE] = useState<number>(8);
+  const [wantReps, setWantReps] = useState<number>(5);
+  const [wantRPE, setWantRPE] = useState<number>(9);
+  const [calculatedWeight, setCalculatedWeight] = useState<number | null>(null);
+
   const handleCalculateRPE = () => {
     const result = calculateOneRepMax(rpeWeight, rpeReps, rpeRPE);
     setEstimated1RM(result);
@@ -32,6 +40,14 @@ export function UtilitySidebar() {
   const handleCalculateDOTS = () => {
     const result = calculateDOTS(dotsBodyweight, dotsTotal, dotsSex, dotsUnit);
     setDotsScore(result);
+  };
+
+  const handleCalculateHaveWant = () => {
+    // First, estimate 1RM from what they "have"
+    const estimated1RM = calculateOneRepMax(haveWeight, haveReps, haveRPE);
+    // Then calculate the weight for what they "want"
+    const result = calculateWorkingWeight(estimated1RM, wantReps, wantRPE);
+    setCalculatedWeight(result);
   };
 
   if (!isSidebarOpen) return null;
@@ -117,6 +133,137 @@ export function UtilitySidebar() {
               <div className="mt-3 p-3 bg-lime-400/10 border border-lime-400/20 rounded-md">
                 <div className="text-xs text-zinc-400 mb-1">Estimated 1RM</div>
                 <div className="text-xl font-bold text-lime-400 font-mono">{estimated1RM}</div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Have/Want RPE Calculator */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ArrowRight className="h-4 w-4 text-lime-400" />
+              <CardTitle className="text-base">Have → Want Calculator</CardTitle>
+            </div>
+            <CardDescription className="text-xs">
+              Convert weight from one rep/RPE to another
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Have Section */}
+            <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg space-y-3">
+              <div className="text-xs font-semibold text-purple-400 uppercase tracking-wide">
+                Have (Current)
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="have-weight" className="text-xs">
+                    Weight
+                  </Label>
+                  <Input
+                    id="have-weight"
+                    type="number"
+                    step="0.5"
+                    value={haveWeight}
+                    onChange={(e) => setHaveWeight(parseFloat(e.target.value) || 0)}
+                    className="font-mono text-sm h-8"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="have-reps" className="text-xs">
+                    Reps
+                  </Label>
+                  <Input
+                    id="have-reps"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={haveReps}
+                    onChange={(e) => setHaveReps(parseInt(e.target.value) || 1)}
+                    className="font-mono text-sm h-8"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="have-rpe" className="text-xs">
+                    RPE
+                  </Label>
+                  <Select
+                    id="have-rpe"
+                    value={haveRPE.toString()}
+                    onChange={(e) => setHaveRPE(parseFloat(e.target.value))}
+                    className="text-sm h-8"
+                  >
+                    <option value="10">10</option>
+                    <option value="9.5">9.5</option>
+                    <option value="9">9</option>
+                    <option value="8.5">8.5</option>
+                    <option value="8">8</option>
+                    <option value="7.5">7.5</option>
+                    <option value="7">7</option>
+                    <option value="6.5">6.5</option>
+                    <option value="6">6</option>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Want Section */}
+            <div className="p-3 bg-lime-500/10 border border-lime-500/30 rounded-lg space-y-3">
+              <div className="text-xs font-semibold text-lime-400 uppercase tracking-wide">
+                Want (Target)
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="want-reps" className="text-xs">
+                    Reps
+                  </Label>
+                  <Input
+                    id="want-reps"
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={wantReps}
+                    onChange={(e) => setWantReps(parseInt(e.target.value) || 1)}
+                    className="font-mono text-sm h-8"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="want-rpe" className="text-xs">
+                    RPE
+                  </Label>
+                  <Select
+                    id="want-rpe"
+                    value={wantRPE.toString()}
+                    onChange={(e) => setWantRPE(parseFloat(e.target.value))}
+                    className="text-sm h-8"
+                  >
+                    <option value="10">10</option>
+                    <option value="9.5">9.5</option>
+                    <option value="9">9</option>
+                    <option value="8.5">8.5</option>
+                    <option value="8">8</option>
+                    <option value="7.5">7.5</option>
+                    <option value="7">7</option>
+                    <option value="6.5">6.5</option>
+                    <option value="6">6</option>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <Button onClick={handleCalculateHaveWant} className="w-full" size="sm">
+              Calculate Weight
+            </Button>
+
+            {calculatedWeight !== null && (
+              <div className="mt-3 p-3 bg-lime-400/10 border border-lime-400/20 rounded-md">
+                <div className="text-xs text-zinc-400 mb-1">Target Weight</div>
+                <div className="text-xl font-bold text-lime-400 font-mono">
+                  {calculatedWeight}
+                </div>
+                <div className="text-xs text-zinc-500 mt-1">
+                  {wantReps} reps @ RPE {wantRPE}
+                </div>
               </div>
             )}
           </CardContent>
