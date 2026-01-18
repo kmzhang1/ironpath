@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Progress } from '@/components/ui/Progress';
 import { useAppStore } from '@/store';
 import { generateProgram, saveProgram } from '@/services/api';
-import { ChevronLeft, ChevronRight, Loader2, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
 import type { LifterProfile, ProgramGenerationRequest } from '@/types';
 
 // Validation schemas
@@ -31,6 +31,7 @@ const step3Schema = z.object({
   goal: z.enum(['peaking', 'hypertrophy', 'strength_block']),
   weeks: z.number().min(4).max(16),
   daysPerWeek: z.number().min(2).max(6),
+  minutesPerWorkout: z.number().min(30).max(120),
 });
 
 const step4Schema = z.object({
@@ -45,7 +46,8 @@ type Step4Data = z.infer<typeof step4Schema>;
 
 export function Wizard() {
   const navigate = useNavigate();
-  const { user, setProfile, addProgram } = useAppStore();
+  const { user, programs, setProfile, addProgram } = useAppStore();
+  const hasExistingPrograms = programs.length > 0;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -61,6 +63,7 @@ export function Wizard() {
     goal: 'strength_block',
     weeks: 8,
     daysPerWeek: 4,
+    minutesPerWorkout: 60,
   });
   const [step4Data, setStep4Data] = useState<Step4Data>({
     limitations: [],
@@ -140,6 +143,7 @@ export function Wizard() {
         goal: step3Data.goal!,
         weeks: step3Data.weeks!,
         daysPerWeek: step3Data.daysPerWeek!,
+        minutesPerWorkout: step3Data.minutesPerWorkout!,
         limitations: step4Data.limitations,
         focusAreas: step4Data.focusAreas,
       };
@@ -168,6 +172,22 @@ export function Wizard() {
   return (
     <div className="min-h-screen bg-zinc-950 p-4 py-12">
       <div className="max-w-2xl mx-auto space-y-6">
+        {/* Exit button - only show if user has existing programs */}
+        {hasExistingPrograms && (
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              disabled={isGenerating}
+              className="text-zinc-400 hover:text-zinc-200"
+            >
+              <X className="mr-2 h-4 w-4" />
+              Exit
+            </Button>
+          </div>
+        )}
+
         {/* Progress */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-zinc-400 font-mono">
@@ -380,6 +400,24 @@ export function Wizard() {
                 </Select>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="minutesPerWorkout">Time per Workout</Label>
+                <Select
+                  id="minutesPerWorkout"
+                  value={step3Data.minutesPerWorkout?.toString()}
+                  onChange={(e) =>
+                    setStep3Data({ ...step3Data, minutesPerWorkout: parseInt(e.target.value) })
+                  }
+                >
+                  <option value="30">30 minutes</option>
+                  <option value="45">45 minutes</option>
+                  <option value="60">60 minutes</option>
+                  <option value="75">75 minutes</option>
+                  <option value="90">90 minutes</option>
+                  <option value="120">120 minutes</option>
+                </Select>
+              </div>
+
               <div className="mt-4 p-4 bg-zinc-800 rounded-md text-sm space-y-1">
                 <div className="text-zinc-400">Summary</div>
                 <div className="text-zinc-50">
@@ -391,7 +429,7 @@ export function Wizard() {
                     : 'strength block'}
                 </div>
                 <div className="text-zinc-400">
-                  {step3Data.daysPerWeek} training days per week
+                  {step3Data.daysPerWeek} training days per week, {step3Data.minutesPerWorkout} min each
                 </div>
               </div>
             </CardContent>

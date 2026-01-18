@@ -20,6 +20,7 @@ export interface ProgramGenerationRequest {
   goal: 'peaking' | 'hypertrophy' | 'strength_block';
   weeks: number; // e.g. 8, 12
   daysPerWeek: number;
+  minutesPerWorkout: number; // Target workout duration (30-120 minutes)
   limitations: string[]; // e.g., "Low back injury"
   focusAreas: string[]; // e.g., "Lockout strength"
 }
@@ -48,6 +49,7 @@ export interface FullProgram {
   createdAt: string;
   title: string;
   weeks: ProgramMicrocycle[];
+  profile?: LifterProfile; // Profile used to generate this program (for restoring state on login)
 }
 
 // Additional types for authentication

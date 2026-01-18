@@ -10,7 +10,7 @@ export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { user, setUser, addProgram, setCurrentProgram } = useAppStore();
+  const { user, setUser, addProgram, setCurrentProgram, setProfile } = useAppStore();
 
   // Helper function to check for existing programs and route accordingly
   const routeAfterLogin = async (userId: string) => {
@@ -28,7 +28,14 @@ export function Login() {
         });
 
         // Set the most recent program as current
-        setCurrentProgram(programs[0]);
+        const mostRecentProgram = programs[0];
+        setCurrentProgram(mostRecentProgram);
+
+        // Extract and set the profile from the program (if available)
+        if (mostRecentProgram.profile) {
+          console.log('Restoring profile from saved program');
+          setProfile(mostRecentProgram.profile);
+        }
 
         // Navigate to dashboard
         navigate('/dashboard');
