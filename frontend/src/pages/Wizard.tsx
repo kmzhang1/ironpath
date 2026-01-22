@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/Label';
 import { Select } from '@/components/ui/Select';
 import { Progress } from '@/components/ui/Progress';
 import { useAppStore } from '@/store';
-import { generateProgram, saveProgram } from '@/services/api';
+import { generateProgram, saveProgram, listMethodologies } from '@/services/api';
 import { ChevronLeft, ChevronRight, Loader2, Sparkles, X } from 'lucide-react';
-import type { LifterProfile, ProgramGenerationRequest } from '@/types';
+import type { LifterProfile, ProgramGenerationRequest, Methodology } from '@/types';
 
 // Validation schemas
 const step1Schema = z.object({
@@ -34,6 +34,15 @@ const step3Schema = z.object({
   minutesPerWorkout: z.number().min(30).max(120),
 });
 
+const step3_5Schema = z.object({
+  trainingAge: z.enum(['novice', 'intermediate', 'advanced']),
+  methodologyId: z.string().min(1, 'Please select a methodology'),
+  weakPoints: z.array(z.string()),
+  equipmentAccess: z.enum(['garage', 'commercial', 'hardcore']),
+  preferredSessionLength: z.number().min(30).max(180),
+  competitionDate: z.string().optional(),
+});
+
 const step4Schema = z.object({
   limitations: z.array(z.string()),
   focusAreas: z.array(z.string()),
@@ -42,6 +51,7 @@ const step4Schema = z.object({
 type Step1Data = z.infer<typeof step1Schema>;
 type Step2Data = z.infer<typeof step2Schema>;
 type Step3Data = z.infer<typeof step3Schema>;
+type Step3_5Data = z.infer<typeof step3_5Schema>;
 type Step4Data = z.infer<typeof step4Schema>;
 
 export function Wizard() {
@@ -52,6 +62,8 @@ export function Wizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [methodologies, setMethodologies] = useState<Methodology[]>([]);
+  const [loadingMethodologies, setLoadingMethodologies] = useState(false);
 
   // Form data
   const [step1Data, setStep1Data] = useState<Partial<Step1Data>>({
@@ -65,13 +77,30 @@ export function Wizard() {
     daysPerWeek: 4,
     minutesPerWorkout: 60,
   });
+  const [step3_5Data, setStep3_5Data] = useState<Partial<Step3_5Data>>({
+    trainingAge: 'novice',
+    equipmentAccess: 'commercial',
+    preferredSessionLength: 60,
+    weakPoints: [],
+  });
   const [step4Data, setStep4Data] = useState<Step4Data>({
     limitations: [],
     focusAreas: [],
   });
 
-  const totalSteps = 4;
+  const totalSteps = 5;
   const progress = (currentStep / totalSteps) * 100;
+
+  // Fetch methodologies when reaching step 3.5
+  useEffect(() => {
+    if (currentStep === 4 && methodologies.length === 0) {
+      setLoadingMethodologies(true);
+      listMethodologies()
+        .then(setMethodologies)
+        .catch((err) => console.error('Failed to load methodologies:', err))
+        .finally(() => setLoadingMethodologies(false));
+    }
+  }, [currentStep, methodologies.length]);
 
   const validateStep = (step: number): boolean => {
     setErrors({});
@@ -84,6 +113,8 @@ export function Wizard() {
       } else if (step === 3) {
         step3Schema.parse(step3Data);
       } else if (step === 4) {
+        step3_5Schema.parse(step3_5Data);
+      } else if (step === 5) {
         step4Schema.parse(step4Data);
       }
       return true;
@@ -116,12 +147,12 @@ export function Wizard() {
   };
 
   const handleGenerate = async () => {
-    if (!validateStep(4)) return;
+    if (!validateStep(5)) return;
 
     setIsGenerating(true);
 
     try {
-      // Build profile
+      // Build profile with extended fields
       const profile: LifterProfile = {
         id: user?.id || 'profile_' + Math.random().toString(36).substr(2, 9),
         name: step1Data.name!,
@@ -136,6 +167,12 @@ export function Wizard() {
           bench: step2Data.bench!,
           deadlift: step2Data.deadlift!,
         },
+        trainingAge: step3_5Data.trainingAge,
+        weakPoints: step3_5Data.weakPoints,
+        equipmentAccess: step3_5Data.equipmentAccess,
+        preferredSessionLength: step3_5Data.preferredSessionLength,
+        competitionDate: step3_5Data.competitionDate,
+        methodologyId: step3_5Data.methodologyId,
       };
 
       // Build request
@@ -148,14 +185,14 @@ export function Wizard() {
         focusAreas: step4Data.focusAreas,
       };
 
-      // Generate program (3-second delay simulated)
+      // Generate program
       const program = await generateProgram(request, profile);
 
       // Save to store
       setProfile(profile);
       addProgram(program);
 
-      // Save to backend (mock)
+      // Save to backend (no-op, already saved)
       await saveProgram(program);
 
       // Navigate to dashboard
@@ -439,6 +476,156 @@ export function Wizard() {
         {currentStep === 4 && (
           <Card className="animate-scale-in">
             <CardHeader>
+              <CardTitle>Methodology & Experience</CardTitle>
+              <CardDescription>Choose your training system and experience level</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="trainingAge">Training Experience</Label>
+                <Select
+                  id="trainingAge"
+                  value={step3_5Data.trainingAge}
+                  onChange={(e) =>
+                    setStep3_5Data({
+                      ...step3_5Data,
+                      trainingAge: e.target.value as 'novice' | 'intermediate' | 'advanced',
+                    })
+                  }
+                >
+                  <option value="novice">Novice (0-2 years)</option>
+                  <option value="intermediate">Intermediate (2-5 years)</option>
+                  <option value="advanced">Advanced (5+ years)</option>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="methodologyId">Training Methodology</Label>
+                <Select
+                  id="methodologyId"
+                  value={step3_5Data.methodologyId || ''}
+                  onChange={(e) =>
+                    setStep3_5Data({ ...step3_5Data, methodologyId: e.target.value })
+                  }
+                  disabled={loadingMethodologies}
+                >
+                  <option value="">
+                    {loadingMethodologies ? 'Loading methodologies...' : 'Select a methodology'}
+                  </option>
+                  {methodologies.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </Select>
+                {errors.methodologyId && (
+                  <p className="text-xs text-red-500">{errors.methodologyId}</p>
+                )}
+                {step3_5Data.methodologyId && (
+                  <p className="text-xs text-zinc-400">
+                    {methodologies.find((m) => m.id === step3_5Data.methodologyId)?.description}
+                  </p>
+                )}
+              </div>
+
+              {step3_5Data.trainingAge !== 'novice' && (
+                <div className="space-y-2">
+                  <Label>Weak Points (optional)</Label>
+                  <div className="space-y-2">
+                    {['lockout', 'off_chest', 'hole', 'starting_strength', 'speed'].map((wp) => (
+                      <label key={wp} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={step3_5Data.weakPoints?.includes(wp) || false}
+                          onChange={(e) => {
+                            const current = step3_5Data.weakPoints || [];
+                            if (e.target.checked) {
+                              setStep3_5Data({
+                                ...step3_5Data,
+                                weakPoints: [...current, wp],
+                              });
+                            } else {
+                              setStep3_5Data({
+                                ...step3_5Data,
+                                weakPoints: current.filter((p) => p !== wp),
+                              });
+                            }
+                          }}
+                          className="rounded border-zinc-700 bg-zinc-800 text-lime-400"
+                        />
+                        <span className="text-sm capitalize">
+                          {wp.replace('_', ' ')}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="equipmentAccess">Equipment Access</Label>
+                <Select
+                  id="equipmentAccess"
+                  value={step3_5Data.equipmentAccess}
+                  onChange={(e) =>
+                    setStep3_5Data({
+                      ...step3_5Data,
+                      equipmentAccess: e.target.value as 'garage' | 'commercial' | 'hardcore',
+                    })
+                  }
+                >
+                  <option value="garage">Garage Gym (basic equipment)</option>
+                  <option value="commercial">Commercial Gym (standard equipment)</option>
+                  <option value="hardcore">Hardcore Gym (bands, chains, specialty bars)</option>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="preferredSessionLength">Preferred Session Length</Label>
+                <div className="flex items-center gap-4">
+                  <input
+                    id="preferredSessionLength"
+                    type="range"
+                    min="30"
+                    max="180"
+                    step="15"
+                    value={step3_5Data.preferredSessionLength || 60}
+                    onChange={(e) =>
+                      setStep3_5Data({
+                        ...step3_5Data,
+                        preferredSessionLength: parseInt(e.target.value),
+                      })
+                    }
+                    className="flex-1"
+                  />
+                  <span className="text-sm font-mono text-zinc-300 w-16">
+                    {step3_5Data.preferredSessionLength} min
+                  </span>
+                </div>
+              </div>
+
+              {step3Data.goal === 'peaking' && (
+                <div className="space-y-2">
+                  <Label htmlFor="competitionDate">Competition Date (optional)</Label>
+                  <Input
+                    id="competitionDate"
+                    type="date"
+                    value={step3_5Data.competitionDate || ''}
+                    onChange={(e) =>
+                      setStep3_5Data({ ...step3_5Data, competitionDate: e.target.value })
+                    }
+                  />
+                  <p className="text-xs text-zinc-500">
+                    Leave blank if you don't have a specific competition date
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {currentStep === 5 && (
+          <Card className="animate-scale-in">
+            <CardHeader>
               <CardTitle>Additional Details</CardTitle>
               <CardDescription>Help us customize your program (optional)</CardDescription>
             </CardHeader>
@@ -485,8 +672,10 @@ export function Wizard() {
                 <div className="flex items-start gap-2">
                   <Sparkles className="w-4 h-4 text-lime-400 mt-0.5 shrink-0" />
                   <div className="text-zinc-300">
-                    Ready to generate your program! Our AI will create a customized {step3Data.weeks}
-                    -week program tailored to your profile.
+                    Ready to generate your program! Our AI will create a customized{' '}
+                    {step3Data.weeks}-week{' '}
+                    {methodologies.find((m) => m.id === step3_5Data.methodologyId)?.name || ''}{' '}
+                    program tailored to your profile.
                   </div>
                 </div>
               </div>

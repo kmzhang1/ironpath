@@ -13,6 +13,13 @@ export interface LifterProfile {
     bench: number;
     deadlift: number;
   };
+  // Multi-agent fields (Phase 4)
+  trainingAge?: 'novice' | 'intermediate' | 'advanced';
+  weakPoints?: string[];
+  equipmentAccess?: 'garage' | 'commercial' | 'hardcore';
+  preferredSessionLength?: number;
+  competitionDate?: string;
+  methodologyId?: string;
 }
 
 // 2. The Request sent to the AI Agent
@@ -137,4 +144,53 @@ export interface ProgressHistory {
     deadlift: number;
   }[];
   checkIns: CheckInAnalysis[];
+}
+
+// Multi-Agent System Types (Phase 4)
+
+export interface Methodology {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface ReadinessCheckRequest {
+  userId: string;
+  programId: string;
+  weekNumber: number;
+  dayNumber: number;
+  sleepQuality: number;
+  stressLevel: number;
+  sorenessFatigue: number;
+}
+
+export interface ReadinessCheckResponse {
+  checkId: string;
+  overallReadiness: number;
+  recommendation: string;
+  shouldAdjustWorkout: boolean;
+  adjustmentType?: 'reduce_volume' | 'reduce_intensity' | 'recovery_session';
+}
+
+export interface AgentMessageRequest {
+  message: string;
+  profile: LifterProfile;
+  currentProgramId?: string;
+}
+
+export interface AgentMessageResponse {
+  agentUsed: string;
+  intentClassification: {
+    intent: string;
+    confidence: number;
+    reasoning: string;
+  };
+  response: {
+    message?: string;
+    response?: string;
+    requiresProgramGeneration?: boolean;
+    requiresFeedbackForm?: boolean;
+  };
+  timestamp: string;
 }

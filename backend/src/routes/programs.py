@@ -13,11 +13,13 @@ from ..core.database import get_db
 from ..core.config import settings
 from ..models.schemas import (
     LifterProfileSchema,
+    ExtendedLifterProfileSchema,
     ProgramGenerationRequest,
     ProgramResponse,
     ErrorResponse,
 )
 from ..models.tables import Program, User
+from ..services.programmer_agent import ProgrammerAgent
 from ..services.agent import AIAgent, ProgramGenerationError, create_mock_program
 
 logger = logging.getLogger(__name__)
@@ -25,20 +27,25 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/programs", tags=["programs"])
 
 
-@router.post("/generate", response_model=ProgramResponse)
+@router.post("/generate", response_model=ProgramResponse, deprecated=True)
 async def generate_program(
     profile: LifterProfileSchema,
     request: ProgramGenerationRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Generate a new powerlifting program using AI.
+    [DEPRECATED] Generate a new powerlifting program using AI (v1 - Legacy).
 
-    This endpoint:
-    1. Receives athlete stats and program parameters
-    2. Calls Gemini AI to generate a structured program
-    3. Saves the program to the database
-    4. Returns the complete program JSON
+    **DEPRECATED:** This is the legacy v1 endpoint. Please use `/generate-v2` instead.
+
+    The v2 endpoint provides:
+    - Methodology-aware programming (Westside, Sheiko, DUP, etc.)
+    - Intelligent exercise selection based on equipment and training age
+    - Weak point targeting
+    - Enhanced program quality
+
+    This v1 endpoint is maintained for backward compatibility only and may be
+    removed in future versions.
 
     Args:
         profile: Lifter profile with stats and biometrics
@@ -51,6 +58,10 @@ async def generate_program(
     Raises:
         HTTPException: If generation fails or validation errors occur
     """
+    logger.warning(
+        f"[DEPRECATED] v1 generation endpoint used by user {profile.id}. "
+        "Please migrate to /generate-v2"
+    )
     try:
         logger.info(f"Received program generation request for user {profile.id}")
 
@@ -125,6 +136,133 @@ async def generate_program(
                 "code": "INTERNAL_ERROR",
                 "details": {"message": str(e)},
             },
+        )
+
+
+@router.post("/generate-v2", response_model=ProgramResponse)
+async def generate_program_v2(
+    profile: ExtendedLifterProfileSchema,
+    request: ProgramGenerationRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generate a new powerlifting program using multi-agent system (v2).
+
+    This endpoint uses the enhanced Programmer Agent with:
+    - Methodology-aware program generation
+    - Exercise library filtering by equipment/complexity
+    - Weak point targeting
+    - Dynamic prompt building with methodology rules
+
+    This is the v2 implementation that replaces the legacy v1 endpoint.
+    It provides:
+    1. Methodology-specific programming (Westside, Sheiko, DUP, etc.)
+    2. Intelligent exercise selection based on profile
+    3. Weak point addressing
+    4. Equipment-aware exercise filtering
+
+    Args:
+        profile: Extended lifter profile with methodology and training age
+        request: Program generation parameters (goal, weeks, days, etc.)
+        db: Database session (injected)
+
+    Returns:
+        ProgramResponse containing the generated program
+
+    Raises:
+        HTTPException: If generation fails or validation errors occur
+    """
+    try:
+        logger.info(
+            f"[V2] Received program generation request for user {profile.id} "
+            f"with methodology {profile.methodologyId}"
+        )
+
+        if not settings.GEMINI_API_KEY:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "error": "AI service not configured",
+                    "code": "SERVICE_UNAVAILABLE",
+                }
+            )
+
+        if not profile.methodologyId:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "error": "Methodology ID required for v2 generation",
+                    "code": "MISSING_METHODOLOGY",
+                    "details": {
+                        "message": "Please select a training methodology in your profile"
+                    },
+                }
+            )
+
+        programmer = ProgrammerAgent(
+            api_key=settings.GEMINI_API_KEY,
+            db_session=db,
+            model_name=settings.GEMINI_MODEL,
+        )
+
+        result = await programmer.process(
+            user_input={},
+            context={"profile": profile, "request": request}
+        )
+
+        program = result["program"]
+        program_id = str(uuid4())
+        program.id = program_id
+
+        if db is not None:
+            try:
+                program_dict = program.model_dump()
+
+                db_program = Program(
+                    id=program_id,
+                    user_id=profile.id,
+                    title=program.title,
+                    program_json=program_dict,
+                    methodology_id=profile.methodologyId,
+                    generation_metadata={
+                        "agent_version": "2.0",
+                        "methodology_used": result["methodology_used"],
+                        "training_age": profile.trainingAge,
+                        "equipment_access": profile.equipmentAccess,
+                        "weak_points": profile.weakPoints,
+                    }
+                )
+
+                db.add(db_program)
+                await db.commit()
+                logger.info(f"[V2] Program saved to database: {program.id}")
+            except Exception as e:
+                await db.rollback()
+                logger.warning(f"[V2] Failed to save program to database: {e}")
+        else:
+            logger.warning("[V2] Database not configured - program not persisted")
+
+        logger.info(
+            f"[V2] Successfully generated program: {program.id} "
+            f"using {result['methodology_used']}"
+        )
+
+        return ProgramResponse(
+            program=program,
+            message=f"Program generated successfully using {result['methodology_used']}",
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[V2] Program generation failed: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "Failed to generate program",
+                "code": "GENERATION_FAILED",
+                "details": {"message": str(e)},
+            }
         )
 
 

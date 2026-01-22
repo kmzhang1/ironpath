@@ -211,3 +211,139 @@ class CheckInAnalysisResponse(BaseModel):
     adjustedProgram: Optional[FullProgramSchema] = Field(
         None, description="Updated program if adjustments needed"
     )
+
+
+# ============================================================================
+# Multi-Agent System Schemas (Phase 1)
+# ============================================================================
+
+class TrainingAgeEnum(str, enum.Enum):
+    """Training age categories"""
+    NOVICE = "novice"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+
+
+class EquipmentAccessEnum(str, enum.Enum):
+    """Equipment access levels"""
+    GARAGE = "garage"
+    COMMERCIAL = "commercial"
+    HARDCORE = "hardcore"
+
+
+class ExtendedLifterProfileSchema(LifterProfileSchema):
+    """Extended lifter profile with multi-agent fields"""
+    trainingAge: TrainingAgeEnum = Field(
+        default=TrainingAgeEnum.NOVICE,
+        description="Lifter's training experience level"
+    )
+    weakPoints: List[str] = Field(
+        default_factory=list,
+        description="Identified weak points (e.g., lockout, off_chest, hole)"
+    )
+    equipmentAccess: EquipmentAccessEnum = Field(
+        default=EquipmentAccessEnum.COMMERCIAL,
+        description="Available equipment level"
+    )
+    preferredSessionLength: int = Field(
+        default=60,
+        ge=30,
+        le=180,
+        description="Preferred workout duration in minutes"
+    )
+    competitionDate: Optional[str] = Field(
+        None,
+        description="ISO 8601 date of competition if peaking"
+    )
+    methodologyId: Optional[str] = Field(
+        None,
+        description="Selected training methodology ID"
+    )
+
+
+class MethodologyListItem(BaseModel):
+    """Methodology list item for selection"""
+    id: str
+    name: str
+    description: str
+    category: str
+
+
+class MethodologyDetailResponse(BaseModel):
+    """Detailed methodology information"""
+    id: str
+    name: str
+    description: str
+    category: str
+    programmingRules: dict
+    knowledgeBase: dict
+
+    class Config:
+        from_attributes = True
+
+
+class ReadinessCheckRequest(BaseModel):
+    """Request to submit pre-workout readiness check"""
+    userId: str
+    programId: str
+    weekNumber: int = Field(..., ge=1)
+    dayNumber: int = Field(..., ge=1, le=7)
+    sleepQuality: int = Field(..., ge=1, le=5, description="1=Poor, 5=Excellent")
+    stressLevel: int = Field(..., ge=1, le=5, description="1=Very Stressed, 5=Relaxed")
+    soreness_fatigue: int = Field(..., ge=1, le=5, description="1=Extremely Sore, 5=Fresh")
+
+
+class ReadinessCheckResponse(BaseModel):
+    """Response with readiness assessment and recommendations"""
+    checkId: str
+    overallReadiness: float = Field(..., ge=0.0, le=1.0, description="0-1 scale")
+    recommendation: str
+    shouldAdjustWorkout: bool
+    adjustmentType: Optional[Literal["reduce_volume", "reduce_intensity", "recovery_session"]]
+    timestamp: str
+
+
+class IntentClassification(BaseModel):
+    """Router agent intent classification result"""
+    intent: str
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    reasoning: str
+    suggestedAgent: str
+    requiresProgramContext: bool
+
+
+class AgentMessageRequest(BaseModel):
+    """Request to send message to agent system"""
+    message: str
+    profile: ExtendedLifterProfileSchema
+    currentProgramId: Optional[str] = None
+
+
+class AgentMessageResponse(BaseModel):
+    """Response from agent system"""
+    agentUsed: str
+    intentClassification: IntentClassification
+    response: dict
+    timestamp: str
+
+
+class ExerciseLibrarySchema(BaseModel):
+    """Exercise from library database"""
+    id: str
+    name: str
+    category: str
+    variationType: str
+    equipment: List[str]
+    targetsWeakPoints: List[str]
+    movementPattern: str
+    complexity: str
+    coachingCues: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
+class AnalystResponse(BaseModel):
+    """Response from Analyst/Mentor agent"""
+    response: str = Field(..., description="Coaching advice or answer")
+    agentType: str = Field(default="analyst_mentor", description="Agent type identifier")

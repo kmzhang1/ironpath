@@ -17,6 +17,7 @@ import { submitWorkoutFeedback, performCheckIn } from '@/services/api';
 import { Dumbbell, MessageSquare, BookOpen } from 'lucide-react';
 import type { FeedbackCategory } from '@/types';
 import { ProgramSelectorModal } from '@/components/ui/ProgramSelectorModal';
+import { AgentChatModal } from '@/components/ui/AgentChatModal';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -48,6 +49,7 @@ export function Dashboard() {
     type: 'daily' | 'weekly';
   }>({ isOpen: false, type: 'daily' });
   const [showProgramSelector, setShowProgramSelector] = useState(false);
+  const [showAgentChat, setShowAgentChat] = useState(false);
 
   if (!currentProgram || !profile) {
     navigate('/wizard');
@@ -271,7 +273,7 @@ export function Dashboard() {
                           </div>
                         )}
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="space-y-4">
                         <EditableExerciseTable
                           weekNumber={week.weekNumber}
                           dayNumber={session.dayNumber}
@@ -279,6 +281,50 @@ export function Dashboard() {
                           sessionCompleted={sessionProgress?.completed}
                           onCompleteSession={() => completeSession(week.weekNumber, session.dayNumber)}
                         />
+
+                        {/* Quick Emoji Feedback */}
+                        {!sessionProgress?.completed && (
+                          <div className="pt-4 border-t border-zinc-800">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-zinc-400">How's this session feeling?</p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    alert('Session marked as "Too Easy". Future adjustments will increase intensity.');
+                                  }}
+                                  className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm flex items-center gap-2"
+                                  title="Too Easy - Increase intensity next time"
+                                >
+                                  <span className="text-xl">🔥</span>
+                                  <span>Too Easy</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    alert('Session marked as "Just Right". Keep it up!');
+                                  }}
+                                  className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm flex items-center gap-2"
+                                  title="Just Right - Perfect intensity"
+                                >
+                                  <span className="text-xl">👍</span>
+                                  <span>Just Right</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    alert('Session marked as "Too Hard". Future adjustments will reduce intensity.');
+                                  }}
+                                  className="px-4 py-2 rounded-md bg-zinc-800 hover:bg-zinc-700 transition-colors text-sm flex items-center gap-2"
+                                  title="Too Hard - Reduce intensity next time"
+                                >
+                                  <span className="text-xl">💩</span>
+                                  <span>Too Hard</span>
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-zinc-500 mt-2">
+                              Quick feedback helps adjust future workouts. For detailed feedback, use "Provide Feedback" above.
+                            </p>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   );
@@ -321,6 +367,23 @@ export function Dashboard() {
         isOpen={showProgramSelector}
         onClose={() => setShowProgramSelector(false)}
       />
+
+      {/* Agent Chat Modal */}
+      <AgentChatModal
+        isOpen={showAgentChat}
+        onClose={() => setShowAgentChat(false)}
+        profile={profile}
+        currentProgramId={currentProgram.id}
+      />
+
+      {/* Floating Chat Button */}
+      <button
+        onClick={() => setShowAgentChat(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 bg-lime-400 hover:bg-lime-500 text-zinc-900 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 z-40"
+        aria-label="Open coach chat"
+      >
+        <MessageSquare className="w-6 h-6" />
+      </button>
     </div>
   );
 }

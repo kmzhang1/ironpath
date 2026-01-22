@@ -13,6 +13,9 @@ from .core.config import settings
 from .routes import programs_router
 from .routes.feedback import router as feedback_router
 from .routes.users import router as users_router
+from .routes.router import router as agent_router
+from .routes.readiness import router as readiness_router
+from .routes.methodologies import router as methodologies_router
 
 # Configure logging
 logging.basicConfig(
@@ -92,6 +95,9 @@ async def root():
 app.include_router(programs_router, prefix="/api")
 app.include_router(feedback_router, prefix="/api")
 app.include_router(users_router, prefix="/api")
+app.include_router(agent_router, prefix="/api")
+app.include_router(readiness_router, prefix="/api")
+app.include_router(methodologies_router, prefix="/api")
 
 
 # Global exception handler

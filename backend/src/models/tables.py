@@ -197,3 +197,118 @@ class ProgressLog(Base):
             f"<ProgressLog(id={self.id}, program_id={self.program_id}, "
             f"week={self.week_number}, day={self.day_number}, completed={self.completed})>"
         )
+
+
+class TrainingMethodology(Base):
+    """
+    Training Methodology - stores methodology knowledge bases
+    Examples: Westside, Sheiko, DUP, Linear, Block Periodization
+    """
+    __tablename__ = "training_methodologies"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
+    description: Mapped[str] = mapped_column(String, nullable=False)
+    category: Mapped[str] = mapped_column(String, nullable=False)
+    system_prompt_template: Mapped[str] = mapped_column(String, nullable=False)
+    programming_rules: Mapped[dict] = mapped_column(JSON, nullable=False)
+    knowledge_base: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<TrainingMethodology(id={self.id}, name={self.name})>"
+
+
+class Exercise(Base):
+    """
+    Exercise Library - filterable by equipment, weak points, complexity
+    """
+    __tablename__ = "exercises"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    variation_type: Mapped[str] = mapped_column(String, nullable=False)
+    equipment: Mapped[dict] = mapped_column(JSON, nullable=False)
+    targets_weak_points: Mapped[dict] = mapped_column(JSON, nullable=False)
+    movement_pattern: Mapped[str] = mapped_column(String, nullable=False)
+    complexity: Mapped[str] = mapped_column(String, nullable=False)
+    coaching_cues: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<Exercise(id={self.id}, name={self.name}, category={self.category})>"
+
+
+class ReadinessCheck(Base):
+    """
+    Readiness Check - pre-workout autoregulation assessments
+    """
+    __tablename__ = "readiness_checks"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("profiles.id"), nullable=False)
+    program_id: Mapped[str] = mapped_column(String, ForeignKey("programs.id"), nullable=False)
+
+    week_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    day_number: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    sleep_quality: Mapped[int] = mapped_column(Integer, nullable=False)
+    stress_level: Mapped[int] = mapped_column(Integer, nullable=False)
+    soreness_fatigue: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    overall_readiness: Mapped[float] = mapped_column(Float, nullable=False)
+    adjustment_recommendation: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<ReadinessCheck(id={self.id}, user_id={self.user_id}, "
+            f"readiness={self.overall_readiness:.2f})>"
+        )
+
+
+class AgentConversation(Base):
+    """
+    Agent Conversation - logs all agent interactions for analytics
+    """
+    __tablename__ = "agent_conversations"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("profiles.id"), nullable=False)
+    agent_type: Mapped[str] = mapped_column(String, nullable=False)
+
+    user_message: Mapped[str] = mapped_column(String, nullable=False)
+    intent_classification: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    agent_response: Mapped[str] = mapped_column(String, nullable=False)
+    context: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<AgentConversation(id={self.id}, agent={self.agent_type})>"

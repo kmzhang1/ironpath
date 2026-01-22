@@ -6,6 +6,11 @@ import type {
   FeedbackCategory,
   WorkoutFeedback,
   CheckInAnalysis,
+  Methodology,
+  ReadinessCheckRequest,
+  ReadinessCheckResponse,
+  AgentMessageRequest,
+  AgentMessageResponse,
 } from '@/types';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
@@ -418,4 +423,72 @@ export async function getUserPrograms(userId: string): Promise<FullProgram[]> {
     console.error('Failed to fetch user programs:', error);
     return [];
   }
+}
+
+/**
+ * Fetch list of available training methodologies
+ */
+export async function listMethodologies(): Promise<Methodology[]> {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  try {
+    const response = await fetch(`${apiUrl}/api/methodologies/list`);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch methodologies: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch methodologies:', error);
+    return [];
+  }
+}
+
+/**
+ * Submit readiness check and get workout adjustment recommendation
+ */
+export async function submitReadinessCheck(
+  data: ReadinessCheckRequest
+): Promise<ReadinessCheckResponse> {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const response = await fetch(`${apiUrl}/api/readiness/check`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to submit readiness check');
+  }
+
+  return await response.json();
+}
+
+/**
+ * Send message to agent router and get response
+ */
+export async function sendAgentMessage(
+  request: AgentMessageRequest
+): Promise<AgentMessageResponse> {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const response = await fetch(`${apiUrl}/api/agent/message`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(request),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'Failed to send message to agent');
+  }
+
+  return await response.json();
 }

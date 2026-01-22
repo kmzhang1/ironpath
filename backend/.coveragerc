@@ -1,0 +1,39 @@
+# Coverage.py configuration for IronPath AI Phase 5 Testing
+
+[run]
+source = src
+omit =
+    */tests/*
+    */migrations/*
+    */alembic/*
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */site-packages/*
+
+[report]
+# Target: >80% coverage per Phase 5 requirements
+precision = 2
+show_missing = True
+skip_covered = False
+
+exclude_lines =
+    # Default excludes
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @abc.abstractmethod
+    # Custom excludes
+    pass
+    \.\.\.
+
+[html]
+directory = htmlcov
+title = IronPath AI Phase 5 Test Coverage
+
+[xml]
+output = coverage.xml
