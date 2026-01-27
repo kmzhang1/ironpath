@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Label } from '@/components/ui/Label';
-import { Select } from '@/components/ui/Select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAppStore } from '@/store';
 import {
   User,
@@ -50,7 +49,7 @@ export function Profile() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-zinc-400">No profile data available</p>
+        <p className="text-[#6B7280] font-normal">No profile data available</p>
       </div>
     );
   }
@@ -130,11 +129,11 @@ export function Profile() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-zinc-50 flex items-center gap-3">
-          <User className="text-lime-400" size={32} />
+        <h1 className="text-2xl font-semibold text-[#1A1A1A] flex items-center gap-3 tracking-tight">
+          <User className="text-[#1A1A1A]" size={28} />
           Athlete Profile
         </h1>
-        <p className="text-zinc-400 mt-1">
+        <p className="text-[#6B7280] font-normal mt-1 text-sm">
           Manage your personal information and track your progress
         </p>
       </div>
@@ -144,18 +143,17 @@ export function Profile() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <User size={20} className="text-lime-400" />
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
+                <User size={18} className="text-[#1A1A1A]" />
                 Personal Information
               </CardTitle>
-              <CardDescription>Your basic athlete details</CardDescription>
+              <CardDescription className="text-sm font-normal text-[#6B7280]">Your basic athlete details</CardDescription>
             </div>
             {!isEditingPersonal ? (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditingPersonal(true)}
-                className="border-lime-500/50 text-lime-400 hover:bg-lime-500/10"
               >
                 <Edit2 size={16} className="mr-2" />
                 Edit
@@ -166,16 +164,14 @@ export function Profile() {
                   variant="outline"
                   size="sm"
                   onClick={handleCancelPersonalEdit}
-                  className="border-zinc-600 text-zinc-400"
                 >
                   <X size={16} className="mr-2" />
                   Cancel
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={handleSavePersonal}
-                  className="border-lime-500/50 text-lime-400 hover:bg-lime-500/10"
                 >
                   <Save size={16} className="mr-2" />
                   Save
@@ -193,10 +189,10 @@ export function Profile() {
                   id="name"
                   value={editedPersonal.name}
                   onChange={(e) => setEditedPersonal({ ...editedPersonal, name: e.target.value })}
-                  className="mt-1"
+                  className="mt-2"
                 />
               ) : (
-                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
+                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB]">
                   {profile.name}
                 </div>
               )}
@@ -209,10 +205,10 @@ export function Profile() {
                   type="number"
                   value={editedPersonal.age}
                   onChange={(e) => setEditedPersonal({ ...editedPersonal, age: parseInt(e.target.value) || 0 })}
-                  className="mt-1"
+                  className="mt-2"
                 />
               ) : (
-                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
+                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB]">
                   {profile.biometrics.age} years
                 </div>
               )}
@@ -226,10 +222,10 @@ export function Profile() {
                   step="0.1"
                   value={editedPersonal.bodyweight}
                   onChange={(e) => setEditedPersonal({ ...editedPersonal, bodyweight: parseFloat(e.target.value) || 0 })}
-                  className="mt-1"
+                  className="mt-2"
                 />
               ) : (
-                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200">
+                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB]">
                   {profile.biometrics.bodyweight} {unit}
                 </div>
               )}
@@ -237,17 +233,17 @@ export function Profile() {
             <div>
               <Label htmlFor="sex">Sex</Label>
               {isEditingPersonal ? (
-                <Select
+                <select
                   id="sex"
                   value={editedPersonal.sex}
                   onChange={(e) => setEditedPersonal({ ...editedPersonal, sex: e.target.value as 'male' | 'female' })}
-                  className="mt-1"
+                  className="mt-2"
                 >
                   <option value="male">Male</option>
                   <option value="female">Female</option>
-                </Select>
+                </select>
               ) : (
-                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg text-zinc-200 capitalize">
+                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB] capitalize">
                   {profile.biometrics.sex}
                 </div>
               )}
@@ -261,18 +257,17 @@ export function Profile() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp size={20} className="text-lime-400" />
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
+                <TrendingUp size={18} className="text-[#1A1A1A]" />
                 One Rep Maxes (1RM)
               </CardTitle>
-              <CardDescription>Your current strength levels</CardDescription>
+              <CardDescription className="text-sm font-normal text-[#6B7280]">Your current strength levels</CardDescription>
             </div>
             {!isEditingMaxes ? (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditingMaxes(true)}
-                className="border-lime-500/50 text-lime-400 hover:bg-lime-500/10"
               >
                 <Edit2 size={16} className="mr-2" />
                 Edit
@@ -283,16 +278,14 @@ export function Profile() {
                   variant="outline"
                   size="sm"
                   onClick={handleCancelEdit}
-                  className="border-zinc-600 text-zinc-400"
                 >
                   <X size={16} className="mr-2" />
                   Cancel
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={handleSaveMaxes}
-                  className="border-lime-500/50 text-lime-400 hover:bg-lime-500/10"
                 >
                   <Save size={16} className="mr-2" />
                   Save
@@ -314,11 +307,11 @@ export function Profile() {
                   onChange={(e) =>
                     setEditedMaxes({ ...editedMaxes, squat: Number(e.target.value) })
                   }
-                  className="mt-1"
+                  className="mt-2"
                 />
               ) : (
-                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg">
-                  <p className="text-2xl font-mono font-bold text-lime-400">
+                <div className="mt-2 px-4 py-3 bg-white rounded-xl border border-[#D1D5DB]">
+                  <p className="text-xl font-semibold text-[#1A1A1A]">
                     {profile.oneRepMax.squat} {unit}
                   </p>
                 </div>
@@ -336,11 +329,11 @@ export function Profile() {
                   onChange={(e) =>
                     setEditedMaxes({ ...editedMaxes, bench: Number(e.target.value) })
                   }
-                  className="mt-1"
+                  className="mt-2"
                 />
               ) : (
-                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg">
-                  <p className="text-2xl font-mono font-bold text-lime-400">
+                <div className="mt-2 px-4 py-3 bg-white rounded-xl border border-[#D1D5DB]">
+                  <p className="text-xl font-semibold text-[#1A1A1A]">
                     {profile.oneRepMax.bench} {unit}
                   </p>
                 </div>
@@ -358,11 +351,11 @@ export function Profile() {
                   onChange={(e) =>
                     setEditedMaxes({ ...editedMaxes, deadlift: Number(e.target.value) })
                   }
-                  className="mt-1"
+                  className="mt-2"
                 />
               ) : (
-                <div className="mt-1 px-4 py-2 bg-zinc-800 rounded-lg">
-                  <p className="text-2xl font-mono font-bold text-lime-400">
+                <div className="mt-2 px-4 py-3 bg-white rounded-xl border border-[#D1D5DB]">
+                  <p className="text-xl font-semibold text-[#1A1A1A]">
                     {profile.oneRepMax.deadlift} {unit}
                   </p>
                 </div>
@@ -371,11 +364,11 @@ export function Profile() {
           </div>
 
           {/* Total */}
-          <div className="mt-6 p-4 bg-lime-500/10 border border-lime-500/30 rounded-lg">
+          <div className="mt-6 p-4 bg-white border border-[#D1D5DB] rounded-xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-lime-400 font-semibold">Total</p>
-                <p className="text-3xl font-mono font-bold text-lime-400 mt-1">
+                <p className="text-xs font-medium uppercase tracking-wider text-[#059669]">Total</p>
+                <p className="text-2xl font-semibold text-[#1A1A1A] mt-1">
                   {isEditingMaxes
                     ? editedMaxes.squat + editedMaxes.bench + editedMaxes.deadlift
                     : total}{' '}
@@ -384,10 +377,10 @@ export function Profile() {
               </div>
               {hasRMHistory && totalChange !== 0 && !isEditingMaxes && (
                 <div className="text-right">
-                  <p className="text-xs text-zinc-400">Change from last update</p>
+                  <p className="text-xs font-normal text-[#6B7280]">Change from last update</p>
                   <p
-                    className={`text-xl font-mono font-bold ${
-                      totalChange > 0 ? 'text-lime-400' : 'text-red-400'
+                    className={`text-lg font-semibold ${
+                      totalChange > 0 ? 'text-[#059669]' : 'text-[#DC2626]'
                     }`}
                   >
                     {totalChange > 0 ? '+' : ''}
@@ -403,78 +396,78 @@ export function Profile() {
       {/* Training Statistics */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity size={20} className="text-lime-400" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
+            <Activity size={18} className="text-[#1A1A1A]" />
             Training Statistics
           </CardTitle>
-          <CardDescription>Your progress and activity summary</CardDescription>
+          <CardDescription className="text-sm font-normal text-[#6B7280]">Your progress and activity summary</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Total Sessions */}
-            <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
               <div className="flex items-center gap-2 mb-2">
-                <Calendar size={18} className="text-blue-400" />
-                <p className="text-xs text-zinc-500 uppercase">Total Sessions</p>
+                <Calendar size={16} className="text-[#2563EB]" />
+                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Total Sessions</p>
               </div>
-              <p className="text-3xl font-bold font-mono text-zinc-200">{totalSessions}</p>
+              <p className="text-2xl font-semibold text-[#1A1A1A]">{totalSessions}</p>
             </div>
 
             {/* Completed Sessions */}
-            <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle size={18} className="text-lime-400" />
-                <p className="text-xs text-zinc-500 uppercase">Completed</p>
+                <CheckCircle size={16} className="text-[#10B981]" />
+                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Completed</p>
               </div>
-              <p className="text-3xl font-bold font-mono text-lime-400">
+              <p className="text-2xl font-semibold text-[#10B981]">
                 {completedSessions}
               </p>
             </div>
 
             {/* Adherence Rate */}
-            <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
               <div className="flex items-center gap-2 mb-2">
-                <Target size={18} className="text-purple-400" />
-                <p className="text-xs text-zinc-500 uppercase">Adherence</p>
+                <Target size={16} className="text-[#7C3AED]" />
+                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Adherence</p>
               </div>
-              <p className="text-3xl font-bold font-mono text-purple-400">
+              <p className="text-2xl font-semibold text-[#7C3AED]">
                 {adherenceRate.toFixed(0)}%
               </p>
             </div>
 
             {/* Check-ins */}
-            <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
               <div className="flex items-center gap-2 mb-2">
-                <Zap size={18} className="text-yellow-400" />
-                <p className="text-xs text-zinc-500 uppercase">Check-ins</p>
+                <Zap size={16} className="text-[#CA8A04]" />
+                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Check-ins</p>
               </div>
-              <p className="text-3xl font-bold font-mono text-yellow-400">
+              <p className="text-2xl font-semibold text-[#CA8A04]">
                 {totalCheckIns}
               </p>
             </div>
 
             {/* Feedback Submitted */}
-            <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
               <div className="flex items-center gap-2 mb-2">
-                <Award size={18} className="text-orange-400" />
-                <p className="text-xs text-zinc-500 uppercase">Feedback</p>
+                <Award size={16} className="text-[#EA580C]" />
+                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Feedback</p>
               </div>
-              <p className="text-3xl font-bold font-mono text-orange-400">
+              <p className="text-2xl font-semibold text-[#EA580C]">
                 {feedbackCount}
               </p>
             </div>
 
             {/* Current Program */}
             {currentProgram && (
-              <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700 col-span-2 md:col-span-3">
+              <div className="p-4 bg-white rounded-xl border border-[#D1D5DB] col-span-2 md:col-span-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar size={18} className="text-lime-400" />
-                  <p className="text-xs text-zinc-500 uppercase">Current Program</p>
+                  <Calendar size={16} className="text-[#1A1A1A]" />
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Current Program</p>
                 </div>
-                <p className="text-lg font-semibold text-zinc-200">
+                <p className="text-base font-semibold text-[#1A1A1A]">
                   {currentProgram.title}
                 </p>
-                <p className="text-sm text-zinc-400 mt-1">
+                <p className="text-sm font-normal text-[#6B7280] mt-1">
                   {currentProgram.weeks.length} weeks •{' '}
                   Created {new Date(currentProgram.createdAt).toLocaleDateString()}
                 </p>
@@ -488,11 +481,11 @@ export function Profile() {
       {rmHistory.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp size={20} className="text-lime-400" />
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
+              <TrendingUp size={18} className="text-[#1A1A1A]" />
               1RM History
             </CardTitle>
-            <CardDescription>Track your strength progression over time</CardDescription>
+            <CardDescription className="text-sm font-normal text-[#6B7280]">Track your strength progression over time</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -504,24 +497,24 @@ export function Profile() {
                   return (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
+                      className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#D1D5DB]"
                     >
                       <div>
-                        <p className="text-sm text-zinc-400">
+                        <p className="text-sm font-normal text-[#6B7280]">
                           {new Date(entry.date).toLocaleDateString()}
                         </p>
                       </div>
-                      <div className="flex gap-6 text-sm font-mono">
-                        <span className="text-zinc-400">
-                          Squat: <span className="text-zinc-200">{entry.squat}</span>
+                      <div className="flex gap-6 text-sm">
+                        <span className="text-[#6B7280] font-normal">
+                          Squat: <span className="text-[#1A1A1A] font-medium">{entry.squat}</span>
                         </span>
-                        <span className="text-zinc-400">
-                          Bench: <span className="text-zinc-200">{entry.bench}</span>
+                        <span className="text-[#6B7280] font-normal">
+                          Bench: <span className="text-[#1A1A1A] font-medium">{entry.bench}</span>
                         </span>
-                        <span className="text-zinc-400">
-                          Deadlift: <span className="text-zinc-200">{entry.deadlift}</span>
+                        <span className="text-[#6B7280] font-normal">
+                          Deadlift: <span className="text-[#1A1A1A] font-medium">{entry.deadlift}</span>
                         </span>
-                        <span className="text-lime-400 font-bold">
+                        <span className="text-[#1A1A1A] font-semibold">
                           Total: {entryTotal} {unit}
                         </span>
                       </div>

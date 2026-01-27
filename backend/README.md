@@ -66,7 +66,7 @@ docker-compose up -d
 ### 5. Run the Server
 
 ```bash
-uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 Or using Python:

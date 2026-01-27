@@ -10,7 +10,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true, // Persist session in localStorage
     autoRefreshToken: true, // Auto refresh token before expiry
     detectSessionInUrl: true, // Detect OAuth callback in URL
-    flowType: 'implicit', // Use implicit flow for simpler OAuth
+    flowType: 'pkce', // Use PKCE flow (recommended)
     storage: window.localStorage, // Use localStorage for persistence
     storageKey: 'ironpath-auth', // Custom storage key
   },

@@ -85,6 +85,9 @@ async def generate_program(
         program_id = str(uuid4())
         program.id = program_id
 
+        # Attach profile to program for state restoration on login
+        program.profile = profile
+
         # Save program to database
         if db is not None:
             try:
@@ -213,6 +216,9 @@ async def generate_program_v2(
         program = result["program"]
         program_id = str(uuid4())
         program.id = program_id
+
+        # Attach profile to program for state restoration on login
+        program.profile = profile
 
         if db is not None:
             try:

@@ -98,39 +98,13 @@ export async function syncUserProfile(user: User): Promise<void> {
 }
 
 /**
- * Handles OAuth callback after Google redirect
- * Extracts user data from Supabase session
+ * @deprecated This function is no longer needed. OAuth is now handled via
+ * Supabase's onAuthStateChange listener in App.tsx.
+ * Kept for backward compatibility only.
  */
 export async function handleOAuthCallback(): Promise<User | null> {
-  if (!isSupabaseConfigured) {
-    return null;
-  }
-
-  const { data: { session }, error } = await supabase.auth.getSession();
-
-  if (error) {
-    console.error('Session retrieval error:', error);
-    throw new Error(`Failed to get session: ${error.message}`);
-  }
-
-  if (!session) {
-    return null;
-  }
-
-  const { user: supabaseUser } = session;
-
-  // Map Supabase user to our User type
-  const user: User = {
-    id: supabaseUser.id,
-    name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || 'Anonymous',
-    email: supabaseUser.email || '',
-    picture: supabaseUser.user_metadata?.avatar_url || supabaseUser.user_metadata?.picture || '',
-  };
-
-  // Sync user profile with backend
-  await syncUserProfile(user);
-
-  return user;
+  console.warn('⚠️ handleOAuthCallback is deprecated and should not be called');
+  return null;
 }
 
 /**

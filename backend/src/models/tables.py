@@ -92,6 +92,18 @@ class LifterProfile(Base):
     bench_1rm: Mapped[float] = mapped_column(Float, nullable=False)
     deadlift_1rm: Mapped[float] = mapped_column(Float, nullable=False)
 
+    # Multi-agent system fields (added in migration 5f9546fe8980)
+    training_age: Mapped[str] = mapped_column(String, nullable=False, server_default='novice')
+    weak_points: Mapped[dict] = mapped_column(JSON, nullable=False, server_default='[]')
+    equipment_access: Mapped[str] = mapped_column(String, nullable=False, server_default='commercial')
+    preferred_session_length: Mapped[int] = mapped_column(Integer, nullable=False, server_default='60')
+    competition_date: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    methodology_id: Mapped[Optional[str]] = mapped_column(
+        String,
+        ForeignKey("training_methodologies.id"),
+        nullable=True
+    )
+
     # Metadata
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -132,6 +144,14 @@ class Program(Base):
     # Full program JSON (matches FullProgram TypeScript interface)
     # Stored as JSONB for efficient querying if needed
     program_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    # Multi-agent system fields (added in migration 5f9546fe8980)
+    methodology_id: Mapped[Optional[str]] = mapped_column(
+        String,
+        ForeignKey("training_methodologies.id"),
+        nullable=True
+    )
+    generation_metadata: Mapped[dict] = mapped_column(JSON, nullable=False, server_default='{}')
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -312,3 +332,32 @@ class AgentConversation(Base):
 
     def __repr__(self) -> str:
         return f"<AgentConversation(id={self.id}, agent={self.agent_type})>"
+
+
+class UserProfileData(Base):
+    """
+    User Profile Data - stores extended lifter profile information as JSON
+    This is separate from the legacy LifterProfile table for flexibility
+    """
+    __tablename__ = "user_profile_data"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("profiles.id"), nullable=False, unique=True, index=True)
+
+    # Store the entire profile as JSON for flexibility
+    profile_data: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<UserProfileData(id={self.id}, user_id={self.user_id})>"

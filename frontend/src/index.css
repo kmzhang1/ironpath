@@ -1,163 +1,176 @@
 @import 'tailwindcss';
+@import "tw-animate-css";
 
-@theme {
-  --color-lime-400: #a3e635;
-  --color-lime-500: #84cc16;
+@custom-variant dark (&:is(.dark *));
 
-  --font-sans: Inter, system-ui, sans-serif;
-  --font-mono: JetBrains Mono, monospace;
+@theme inline {
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
+:root {
+  /* Light Mode - High Contrast & Clean */
+  --radius: 0.75rem;
 
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
-@layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
-  }
+  --background: #FFFFFF;
+  --foreground: #09090B; /* Zinc 950 */
+
+  --card: #FFFFFF;
+  --card-foreground: #09090B;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #09090B;
+
+  --primary: #10B981; /* Emerald 500 */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F4F4F5; /* Zinc 100 */
+  --secondary-foreground: #18181B; /* Zinc 900 */
+
+  --muted: #F4F4F5;
+  --muted-foreground: #71717A; /* Zinc 500 */
+
+  --accent: #F4F4F5;
+  --accent-foreground: #18181B;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E4E4E7; /* Zinc 200 */
+  --input: #E4E4E7;
+  --ring: #10B981;
+
+  /* Chart colors */
+  --chart-1: #10B981;
+  --chart-2: #3B82F6;
+  --chart-3: #F59E0B;
+  --chart-4: #8B5CF6;
+  --chart-5: #EC4899;
+
+  /* Sidebar */
+  --sidebar: #FAFAFA;
+  --sidebar-foreground: #09090B;
+  --sidebar-primary: #10B981;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F4F4F5;
+  --sidebar-accent-foreground: #18181B;
+  --sidebar-border: #E4E4E7;
+  --sidebar-ring: #10B981;
+}
+
+.dark {
+  /* Dark Mode - Deep & Readable */
+  --background: #09090B; /* Zinc 950 */
+  --foreground: #FAFAFA; /* Zinc 50 */
+
+  --card: #18181B; /* Zinc 900 */
+  --card-foreground: #FAFAFA;
+
+  --popover: #18181B;
+  --popover-foreground: #FAFAFA;
+
+  --primary: #10B981;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #27272A; /* Zinc 800 */
+  --secondary-foreground: #FAFAFA;
+
+  --muted: #27272A;
+  --muted-foreground: #A1A1AA; /* Zinc 400 */
+
+  --accent: #27272A;
+  --accent-foreground: #FAFAFA;
+
+  --destructive: #7F1D1D;
+  --destructive-foreground: #FAFAFA;
+
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #34D399;
+
+  /* Chart colors */
+  --chart-1: #34D399;
+  --chart-2: #60A5FA;
+  --chart-3: #FBBF24;
+  --chart-4: #A78BFA;
+  --chart-5: #F472B6;
+
+  /* Sidebar */
+  --sidebar: #18181B;
+  --sidebar-foreground: #FAFAFA;
+  --sidebar-primary: #10B981;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #27272A;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #27272A;
+  --sidebar-ring: #34D399;
 }
 
 @layer base {
-  :root {
-    --background: 0 0% 3.9%; /* zinc-950 */
-    --foreground: 0 0% 98%;
-    --card: 0 0% 9%; /* zinc-900 */
-    --card-foreground: 0 0% 98%;
-    --primary: 84 81% 56%; /* lime-400 */
-    --primary-foreground: 0 0% 9%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 84 81% 56%;
-  }
-
   * {
-    @apply border-zinc-800;
+    @apply border-border outline-ring/50;
   }
 
   body {
-    @apply bg-zinc-950 text-zinc-50 font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Custom scrollbar for dark theme */
-  ::-webkit-scrollbar {
-    @apply w-2 h-2;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight text-foreground;
   }
 
-  ::-webkit-scrollbar-track {
-    @apply bg-zinc-900;
+  .text-subtle {
+    @apply text-muted-foreground;
   }
+}
 
-  ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-700 rounded-full hover:bg-zinc-600;
-    transition: background-color 0.2s ease;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
   }
-
-  /* Smooth animations */
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  @keyframes slideInFromRight {
-    from {
-      opacity: 0;
-      transform: translateX(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  @keyframes scaleIn {
-    from {
-      opacity: 0;
-      transform: scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -1000px 0;
-    }
-    100% {
-      background-position: 1000px 0;
-    }
-  }
-
-  /* Animation utility classes */
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .animate-slide-up {
-    animation: slideUp 0.4s ease-out;
-  }
-
-  .animate-slide-down {
-    animation: slideDown 0.4s ease-out;
-  }
-
-  .animate-slide-in-right {
-    animation: slideInFromRight 0.4s ease-out;
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.3s ease-out;
-  }
-
-  /* Smooth transitions for interactive elements */
-  button, a, input, select, textarea {
-    transition: all 0.2s ease;
-  }
-
-  /* Card hover effects */
-  .card-hover {
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  }
-
-  .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px -10px rgba(163, 230, 53, 0.2);
-    border-color: rgba(163, 230, 53, 0.3);
+  body {
+    @apply bg-background text-foreground;
   }
 }

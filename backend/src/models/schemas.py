@@ -89,6 +89,7 @@ class FullProgramSchema(BaseModel):
     createdAt: str = Field(..., description="ISO 8601 timestamp")
     title: str = Field(..., description="Program title")
     weeks: List[ProgramMicrocycleSchema] = Field(..., min_length=1, description="Training weeks")
+    profile: Optional["ExtendedLifterProfileSchema"] = Field(None, description="Profile used to generate this program")
 
 
 # ============================================================================

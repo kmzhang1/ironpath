@@ -9,8 +9,12 @@ import {
   Calculator,
   TrendingUp,
   LogOut,
-  ChevronRight,
+  Sun,
+  Moon,
+  LayoutDashboard
 } from 'lucide-react';
+import { useTheme } from '@/contexts/ThemeContext';
+import { cn } from '@/lib/utils';
 
 interface LeftSidebarProps {
   onNavigate: (tab: 'dashboard' | 'profile' | 'checkin-daily' | 'checkin-weekly') => void;
@@ -30,6 +34,7 @@ export function LeftSidebar({
   currentTab = 'dashboard',
 }: LeftSidebarProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const { theme, toggleTheme } = useTheme();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -37,7 +42,7 @@ export function LeftSidebar({
     {
       id: 'dashboard',
       label: 'Dashboard',
-      icon: Calendar,
+      icon: LayoutDashboard,
       onClick: () => onNavigate('dashboard'),
     },
     {
@@ -54,35 +59,24 @@ export function LeftSidebar({
       label: 'Daily Check-In',
       icon: Calendar,
       onClick: () => onNavigate('checkin-daily'),
-      color: 'text-blue-400 hover:bg-blue-500/10 border-blue-500/50',
     },
     {
       id: 'checkin-weekly',
       label: 'Weekly Check-In',
       icon: Activity,
       onClick: () => onNavigate('checkin-weekly'),
-      color: 'text-purple-400 hover:bg-purple-500/10 border-purple-500/50',
     },
     {
       id: 'update-maxes',
       label: 'Update 1RMs',
       icon: TrendingUp,
       onClick: onUpdateMaxes,
-      color: 'text-lime-400 hover:bg-lime-500/10 border-lime-500/50',
     },
     {
       id: 'utilities',
       label: 'Utilities',
       icon: Calculator,
       onClick: onUtilities,
-      color: 'text-zinc-400 hover:bg-zinc-700 border-zinc-600',
-    },
-    {
-      id: 'export',
-      label: 'Export to Excel',
-      icon: Download,
-      onClick: onExport,
-      color: 'text-zinc-400 hover:bg-zinc-700 border-zinc-600',
     },
   ];
 
@@ -92,129 +86,141 @@ export function LeftSidebar({
       {!isOpen && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-3 bg-zinc-900 border border-zinc-700 rounded-lg hover:bg-zinc-800 transition-colors"
+          className="fixed top-6 left-6 z-50 p-2.5 bg-[var(--card)] border border-[var(--border)] rounded-xl hover:bg-[var(--secondary)] transition-colors shadow-sm"
           aria-label="Open sidebar"
         >
-          <Menu size={24} className="text-zinc-400" />
+          <Menu size={20} className="text-[var(--muted-foreground)]" />
         </button>
       )}
 
       {/* Sidebar */}
       <div
-        className={`
-          fixed top-0 left-0 h-full bg-zinc-900 border-r border-zinc-800 z-40
-          transition-all duration-300 ease-in-out
-          ${isOpen ? 'w-64' : 'w-0'}
-          overflow-hidden
-        `}
+        className={cn(
+          "fixed top-0 left-0 h-full bg-[var(--card)] border-r border-[var(--border)] z-40 transition-all duration-300 ease-in-out overflow-hidden flex flex-col",
+          isOpen ? "w-64" : "w-0"
+        )}
       >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-lime-400 rounded-lg flex items-center justify-center">
-                <span className="text-zinc-950 font-bold text-sm">IP</span>
-              </div>
-              <div className="text-sm">
-                <p className="font-bold text-zinc-50">IronPath</p>
-                <p className="text-xs text-lime-400">AI Coach</p>
-              </div>
-            </div>
-            <button
-              onClick={toggleSidebar}
-              className="p-1 hover:bg-zinc-800 rounded transition-colors"
-              aria-label="Close sidebar"
-            >
-              <X size={20} className="text-zinc-400" />
-            </button>
+        {/* Header - maintains height even when closed */}
+        <div className="p-6 mb-2" style={{ height: '88px' }}>
+          <div className="flex items-center justify-between h-full">
+            {isOpen && (
+              <>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--primary)] shadow-sm">
+                    <span className="text-white font-bold text-lg">IP</span>
+                  </div>
+                  <div>
+                    <p className="font-bold text-[var(--foreground)] text-base tracking-tight">IronPath</p>
+                    <p className="text-xs font-normal text-[var(--muted-foreground)]">AI Coach</p>
+                  </div>
+                </div>
+                <button
+                  onClick={toggleSidebar}
+                  className="p-2 hover:bg-[var(--secondary)] rounded-lg transition-colors"
+                  aria-label="Close sidebar"
+                >
+                  <X size={18} className="text-[var(--muted-foreground)]" />
+                </button>
+              </>
+            )}
           </div>
+        </div>
 
-          {/* Navigation Items */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
-            {/* Main Navigation */}
-            <div>
-              <p className="text-xs uppercase text-zinc-500 font-semibold mb-3 px-2">
-                Navigation
-              </p>
-              <div className="space-y-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = currentTab === item.id;
+        {/* Navigation Items */}
+        <div className="flex-1 overflow-y-auto px-4 space-y-8">
+          {/* Main Navigation */}
+          <div>
+            <p className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-3 px-3">
+              Menu
+            </p>
+            <div className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentTab === item.id;
 
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={item.onClick}
-                      className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                        transition-all text-left
-                        ${
-                          isActive
-                            ? 'bg-lime-500/10 text-lime-400 border border-lime-500/50'
-                            : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200'
-                        }
-                      `}
-                    >
-                      <Icon size={18} />
-                      <span className="text-sm font-medium">{item.label}</span>
-                      {isActive && (
-                        <ChevronRight size={16} className="ml-auto" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div>
-              <p className="text-xs uppercase text-zinc-500 font-semibold mb-3 px-2">
-                Actions
-              </p>
-              <div className="space-y-1">
-                {actionItems.map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={item.onClick}
-                      className={`
-                        w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                        border transition-all text-left
-                        ${item.color || 'text-zinc-400 hover:bg-zinc-800 border-zinc-700'}
-                      `}
-                    >
-                      <Icon size={18} />
-                      <span className="text-sm font-medium">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+                return (
+                  <button
+                    key={item.id}
+                    onClick={item.onClick}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left text-sm",
+                      isActive
+                        ? "bg-[var(--accent)] text-[var(--accent-foreground)] font-semibold shadow-sm"
+                        : "text-[var(--muted-foreground)] font-normal hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                    )}
+                  >
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 1.5} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Footer - Logout */}
-          <div className="p-4 border-t border-zinc-800">
-            <button
-              onClick={onLogout}
-              className="
-                w-full flex items-center gap-3 px-3 py-2.5 rounded-lg
-                text-red-400 hover:bg-red-500/10 border border-red-500/50
-                transition-all
-              "
-            >
-              <LogOut size={18} />
-              <span className="text-sm font-medium">Logout</span>
-            </button>
+          {/* Actions */}
+          <div>
+            <p className="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wider mb-3 px-3">
+              Tools
+            </p>
+            <div className="space-y-1">
+              {actionItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={item.onClick}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left text-sm font-normal text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+                  >
+                    <Icon size={20} strokeWidth={1.5} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+              
+              <button
+                onClick={onExport}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left text-sm font-normal text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+              >
+                <Download size={20} strokeWidth={1.5} />
+                <span>Export Data</span>
+              </button>
+            </div>
           </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-[var(--border)] space-y-2 bg-[var(--card)]">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-normal text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)] transition-all"
+          >
+            {theme === 'light' ? (
+              <>
+                <Moon size={20} strokeWidth={1.5} />
+                <span>Dark Mode</span>
+              </>
+            ) : (
+              <>
+                <Sun size={20} strokeWidth={1.5} />
+                <span>Light Mode</span>
+              </>
+            )}
+          </button>
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-normal text-[var(--destructive)] hover:bg-[var(--destructive)]/10 transition-all"
+          >
+            <LogOut size={20} strokeWidth={1.5} />
+            <span>Logout</span>
+          </button>
         </div>
       </div>
 
       {/* Overlay (mobile) */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
           onClick={toggleSidebar}
         />
       )}

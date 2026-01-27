@@ -1,203 +1,94 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
-import { useAppStore } from '@/store';
-import { loginWithGoogle, handleOAuthCallback, getUserPrograms } from '@/services/api';
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { loginWithGoogle } from '@/services/api';
 import { Dumbbell, Loader2, AlertCircle } from 'lucide-react';
 
 export function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const { user, setUser, addProgram, setCurrentProgram, setProfile } = useAppStore();
-
-  // Helper function to check for existing programs and route accordingly
-  const routeAfterLogin = async (userId: string) => {
-    try {
-      // Fetch existing programs from backend
-      const programs = await getUserPrograms(userId);
-
-      if (programs.length > 0) {
-        // User has existing programs - load them and go to dashboard
-        console.log(`Found ${programs.length} existing program(s) for user`);
-
-        // Load all programs into the store
-        programs.forEach((program) => {
-          addProgram(program);
-        });
-
-        // Set the most recent program as current
-        const mostRecentProgram = programs[0];
-        setCurrentProgram(mostRecentProgram);
-
-        // Extract and set the profile from the program (if available)
-        if (mostRecentProgram.profile) {
-          console.log('Restoring profile from saved program');
-          setProfile(mostRecentProgram.profile);
-        }
-
-        // Navigate to dashboard
-        navigate('/dashboard');
-      } else {
-        // No programs - take them to wizard
-        console.log('No existing programs found, routing to wizard');
-        navigate('/wizard');
-      }
-    } catch (err) {
-      console.error('Error checking for programs:', err);
-      // On error, default to wizard
-      navigate('/wizard');
-    }
-  };
-
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      routeAfterLogin(user.id);
-    }
-  }, [user]);
-
-  // Handle OAuth callback when returning from Google
-  useEffect(() => {
-    const handleCallback = async () => {
-      // Check if this is an OAuth callback
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const searchParams = new URLSearchParams(window.location.search);
-
-      if (hashParams.has('access_token') || searchParams.has('code')) {
-        setIsLoading(true);
-        try {
-          const user = await handleOAuthCallback();
-          if (user) {
-            setUser(user);
-            await routeAfterLogin(user.id);
-          }
-        } catch (err) {
-          console.error('OAuth callback error:', err);
-          setError('Authentication failed. Please try again.');
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    handleCallback();
-  }, [navigate, setUser]);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const result = await loginWithGoogle();
-
-      // If using mock mode (returns a user), navigate based on programs
-      if (result) {
-        setUser(result);
-        await routeAfterLogin(result.id);
-      }
-      // Otherwise, Supabase will redirect to Google (function returns void)
+      console.log('🔐 Initiating Google OAuth login...');
+      await loginWithGoogle();
+      // Note: Navigation will be handled by the onAuthStateChange listener in App.tsx
+      // We don't need to do anything here - just initiate the OAuth flow
+      console.log('✅ OAuth flow initiated, waiting for redirect...');
     } catch (err) {
-      console.error('Login failed:', err);
+      console.error('❌ Google login error:', err);
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
       setIsLoading(false);
     }
+    // Don't set isLoading to false here - it will be shown until OAuth completes or errors
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo and Title */}
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-lime-400 rounded-lg flex items-center justify-center">
-              <Dumbbell className="w-12 h-12 text-zinc-950" />
-            </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="w-full max-w-md space-y-6">
+        <div className="flex flex-col items-center space-y-2 text-center">
+          <div className="p-3 bg-primary/10 rounded-xl">
+            <Dumbbell className="w-8 h-8 text-primary" />
           </div>
-          <div>
-            <h1 className="text-4xl font-bold text-zinc-50">
-              IronPath <span className="text-lime-400">AI</span>
-            </h1>
-            <p className="mt-2 text-zinc-400 font-mono text-sm">
-              Powerlifting coaching, algorithmically perfected
-            </p>
-          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">IronPath</h1>
+          <p className="text-sm text-muted-foreground">Powerlifting coaching, algorithmically perfected</p>
         </div>
 
-        {/* Login Card */}
         <Card>
-          <CardHeader>
-            <CardTitle>Welcome Back</CardTitle>
-            <CardDescription>
-              Sign in to generate your personalized powerlifting program
-            </CardDescription>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">Welcome back</CardTitle>
+            <CardDescription>Sign in to access your program</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid gap-4">
             {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-950/50 border border-red-900 rounded-md">
-                <AlertCircle className="h-4 w-4 text-red-400" />
-                <p className="text-sm text-red-400">{error}</p>
+              <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+                <AlertCircle className="w-4 h-4" />
+                {error}
               </div>
             )}
-
-            <Button
-              onClick={handleGoogleLogin}
-              disabled={isLoading}
-              className="w-full h-11"
-              size="lg"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                <>
-                  <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
-                    <path
-                      fill="currentColor"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="currentColor"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  Continue with Google
-                </>
-              )}
-            </Button>
-
-            <div className="text-xs text-zinc-500 text-center">
-              By continuing, you agree to our Terms of Service and Privacy Policy
+            
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="m@example.com" disabled />
             </div>
-          </CardContent>
-        </Card>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" disabled />
+            </div>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
 
-        {/* Features */}
-        <div className="grid grid-cols-3 gap-4 text-center text-xs">
-          <div className="space-y-1">
-            <div className="text-lime-400 font-semibold">AI-Generated</div>
-            <div className="text-zinc-500">Custom programs</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-lime-400 font-semibold">RPE-Based</div>
-            <div className="text-zinc-500">Auto-regulation</div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-lime-400 font-semibold">Export Ready</div>
-            <div className="text-zinc-500">Excel sheets</div>
-          </div>
-        </div>
+            <Button variant="outline" onClick={handleGoogleLogin} disabled={isLoading} className="w-full">
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                  <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+              )}
+              Google
+            </Button>
+          </CardContent>
+          <CardFooter>
+            <p className="px-8 text-center text-sm text-muted-foreground w-full">
+              By clicking continue, you agree to our Terms of Service.
+            </p>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

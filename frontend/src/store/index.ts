@@ -27,6 +27,7 @@ interface AppState {
   programs: FullProgram[];
   currentProgram: FullProgram | null;
   addProgram: (program: FullProgram) => void;
+  setPrograms: (programs: FullProgram[]) => void;
   setCurrentProgram: (program: FullProgram | null) => void;
   selectProgramById: (programId: string) => void;
   updateExercise: (weekNum: number, dayNum: number, exerciseIdx: number, updates: Partial<any>) => void;
@@ -140,6 +141,9 @@ export const useAppStore = create<AppState>()(
             checkIns: [],
           },
         });
+      },
+      setPrograms: (programs) => {
+        set({ programs });
       },
       setCurrentProgram: (currentProgram) => {
         set({ currentProgram });
