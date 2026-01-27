@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAppStore } from '@/store';
-import { X, Plus, Calendar, ChevronRight } from 'lucide-react';
+import { X, Plus, Calendar, ChevronRight, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { deleteProgram as deleteProgramApi } from '@/services/api';
 
 interface ProgramSelectorModalProps {
   isOpen: boolean;
@@ -11,7 +13,8 @@ interface ProgramSelectorModalProps {
 
 export function ProgramSelectorModal({ isOpen, onClose }: ProgramSelectorModalProps) {
   const navigate = useNavigate();
-  const { programs, currentProgram, selectProgramById } = useAppStore();
+  const { programs, currentProgram, selectProgramById, deleteProgram } = useAppStore();
+  const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
 
   const handleSelectProgram = (programId: string) => {
     selectProgramById(programId);
@@ -21,6 +24,32 @@ export function ProgramSelectorModal({ isOpen, onClose }: ProgramSelectorModalPr
   const handleCreateNew = () => {
     navigate('/wizard');
     onClose();
+  };
+
+  const handleDeleteProgram = async (programId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (!confirm('Are you sure you want to delete this program? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingProgramId(programId);
+
+    try {
+      await deleteProgramApi(programId);
+      deleteProgram(programId);
+
+      // If no programs left, close modal and navigate to dashboard
+      // Dashboard will show the "Create First Program" UI
+      if (programs.length === 1) {
+        onClose();
+      }
+    } catch (error) {
+      console.error('Failed to delete program:', error);
+      alert('Failed to delete program. Please try again.');
+    } finally {
+      setDeletingProgramId(null);
+    }
   };
 
   if (!isOpen) return null;
@@ -95,7 +124,7 @@ export function ProgramSelectorModal({ isOpen, onClose }: ProgramSelectorModalPr
                     onClick={() => handleSelectProgram(program.id)}
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h4 className="font-semibold text-zinc-50">{program.title}</h4>
@@ -115,11 +144,22 @@ export function ProgramSelectorModal({ isOpen, onClose }: ProgramSelectorModalPr
                             </span>
                           </div>
                         </div>
-                        <ChevronRight
-                          className={`w-5 h-5 ${
-                            currentProgram?.id === program.id ? 'text-lime-400' : 'text-zinc-600'
-                          }`}
-                        />
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleDeleteProgram(program.id, e)}
+                            disabled={deletingProgramId === program.id}
+                            className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <ChevronRight
+                            className={`w-5 h-5 ${
+                              currentProgram?.id === program.id ? 'text-lime-400' : 'text-zinc-600'
+                            }`}
+                          />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

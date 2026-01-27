@@ -22,6 +22,7 @@ function AppContent() {
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const isAuthInitializedRef = useRef(false);
+  const hasCompletedInitialNavigationRef = useRef(false);
   const { setUser, setPrograms, setCurrentProgram, setProfile } = useAppStore();
   const navigate = useNavigate();
 
@@ -85,6 +86,12 @@ function AppContent() {
 
     // Helper function to handle authenticated user
     const handleAuthenticatedUser = async (supabaseUser: any) => {
+      // Prevent repeated navigation after initial setup
+      if (hasCompletedInitialNavigationRef.current) {
+        console.log('⏭️ Skipping navigation - already completed initial setup');
+        return;
+      }
+
       try {
         const appUser: User = {
           id: supabaseUser.id,
@@ -125,34 +132,41 @@ function AppContent() {
 
             console.log('🚀 Preparing navigation to /dashboard');
             setPendingNavigation('/dashboard');
+            hasCompletedInitialNavigationRef.current = true;
           } else {
             // Legacy programs without profile - redirect to profile setup first
             console.warn('⚠️ No profile found in program (legacy data) - redirecting to profile setup');
             setPendingNavigation('/profile-setup');
+            hasCompletedInitialNavigationRef.current = true;
           }
         } else {
           // No programs - check if user has completed profile setup
-          // For now, we'll check if we can load a saved profile from backend
+          // If profile exists but no programs, redirect to dashboard which will show "Create First Program"
           try {
             const profileResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/profiles/${appUser.id}`);
             if (profileResponse.ok) {
               const savedProfile = await profileResponse.json();
-              console.log('✅ Found saved profile, redirecting to dashboard');
+              console.log('✅ Found saved profile but no programs, redirecting to dashboard to show create program prompt');
               setProfile(savedProfile.profile);
+              // Redirect to dashboard - it will show the "Create Your First Program" button
               setPendingNavigation('/dashboard');
+              hasCompletedInitialNavigationRef.current = true;
             } else {
               console.log('🚀 No profile found, redirecting to profile setup');
               setPendingNavigation('/profile-setup');
+              hasCompletedInitialNavigationRef.current = true;
             }
           } catch (error) {
             console.log('🚀 Could not load profile, redirecting to profile setup (new user flow)');
             setPendingNavigation('/profile-setup');
+            hasCompletedInitialNavigationRef.current = true;
           }
         }
       } catch (error) {
         console.error('❌ Error handling authenticated user:', error);
         // On error, still allow navigation but to a safe default
         setPendingNavigation('/wizard');
+        hasCompletedInitialNavigationRef.current = true;
       } finally {
         // Stop showing loading screen
         setIsCheckingSession(false);
@@ -185,6 +199,7 @@ function AppContent() {
           setPrograms([]);
           setCurrentProgram(null);
           isAuthInitializedRef.current = false;
+          hasCompletedInitialNavigationRef.current = false;
           setPendingNavigation('/');
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('🔄 Token refreshed');

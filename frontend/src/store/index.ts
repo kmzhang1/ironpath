@@ -30,6 +30,7 @@ interface AppState {
   setPrograms: (programs: FullProgram[]) => void;
   setCurrentProgram: (program: FullProgram | null) => void;
   selectProgramById: (programId: string) => void;
+  deleteProgram: (programId: string) => void;
   updateExercise: (weekNum: number, dayNum: number, exerciseIdx: number, updates: Partial<any>) => void;
 
   // Progress Tracking
@@ -168,6 +169,28 @@ export const useAppStore = create<AppState>()(
         const program = programs.find(p => p.id === programId);
         if (program) {
           get().setCurrentProgram(program);
+        }
+      },
+      deleteProgram: (programId) => {
+        const programs = get().programs;
+        const currentProgram = get().currentProgram;
+
+        // Remove program from list
+        const updatedPrograms = programs.filter(p => p.id !== programId);
+        set({ programs: updatedPrograms });
+
+        // If deleting the current program, switch to another or set to null
+        if (currentProgram?.id === programId) {
+          if (updatedPrograms.length > 0) {
+            // Switch to the first remaining program
+            get().setCurrentProgram(updatedPrograms[0]);
+          } else {
+            // No programs left
+            set({
+              currentProgram: null,
+              progressHistory: null
+            });
+          }
         }
       },
       updateExercise: (weekNum, dayNum, exerciseIdx, updates) => {

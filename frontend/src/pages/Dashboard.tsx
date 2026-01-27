@@ -117,54 +117,21 @@ export function Dashboard() {
     return null;
   }
 
-  // Show "Create your first program" button if no program exists
-  if (!currentProgram) {
-    console.log('Dashboard: No program found, showing create program prompt');
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 bg-primary/10 rounded-xl">
-                <Target className="w-12 h-12 text-primary" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl">Welcome, {profile.name}!</CardTitle>
-            <CardDescription className="text-base">
-              You don't have any programs yet. Let's create your first one.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={() => navigate('/program-setup')}
-              className="w-full"
-              size="lg"
-            >
-              <Sparkles className="mr-2 h-5 w-5" />
-              Create Your First Program
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Action Handlers
+  // Action Handlers - Define before any early returns
   const handleNavigate = (tab: any) => setActiveTab(tab);
-  
+
   const handleSidebarAction = (action: string) => {
     switch(action) {
       case 'checkin-daily': setCheckInModal({ isOpen: true, type: 'daily' }); break;
       case 'checkin-weekly': setCheckInModal({ isOpen: true, type: 'weekly' }); break;
       case 'update-maxes': setShowMaxesModal(true); break;
       case 'utilities': setShowUtilities(true); break;
-      case 'export': generateExcelLog(currentProgram, profile); break;
+      case 'export': if (currentProgram) generateExcelLog(currentProgram, profile); break;
       case 'switch-program': setShowProgramSelector(true); break;
       case 'logout': reset(); navigate('/'); break;
     }
   };
 
-  // ... Keep existing handlers (handleOpenFeedback, handleSubmitFeedback, handleCheckIn) ...
   const handleOpenFeedback = (weekNumber: number, dayNumber: number, sessionFocus: string) => {
     setFeedbackModal({ isOpen: true, weekNumber, dayNumber, sessionFocus });
   };
@@ -175,18 +142,94 @@ export function Dashboard() {
       feedbackModal.dayNumber,
       categories,
       feedbackText,
-      currentProgram
+      currentProgram!
     );
     storeFeedback(feedback);
-    // Suggest replacing alert with Sonner in next step, keeping alert for now
     alert(`Workout adjusted! ${feedback.suggestedAdjustment}`);
   };
 
   const handleCheckIn = async (type: 'daily' | 'weekly') => {
-    const analysis = await performCheckIn(type, progressHistory, currentProgram);
+    const analysis = await performCheckIn(type, progressHistory, currentProgram!);
     addCheckIn(analysis);
     return analysis;
   };
+
+  // Show normal dashboard layout with centered "Create your first program" button if no program exists
+  if (!currentProgram) {
+    console.log('Dashboard: No program found, showing create program prompt');
+    return (
+      <SidebarProvider>
+        <AppSidebar
+          user={{ name: profile.name, email: 'user@example.com' }}
+          onNavigate={handleNavigate}
+          onAction={handleSidebarAction}
+          activeTab={activeTab}
+        />
+
+        <SidebarInset>
+          {/* Header */}
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 sticky top-0 z-10">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <div className="flex flex-1 items-center justify-between">
+              <h1 className="text-sm font-bold tracking-tight">
+                {activeTab === 'profile' ? 'Profile' : 'Dashboard'}
+              </h1>
+            </div>
+          </header>
+
+          {/* Main Content */}
+          <div className="flex flex-1 items-center justify-center p-4">
+            {activeTab === 'profile' ? (
+              <div className="w-full max-w-6xl mx-auto">
+                <Profile />
+              </div>
+            ) : (
+              <Card className="w-full max-w-md">
+                <CardHeader className="text-center">
+                  <div className="flex justify-center mb-4">
+                    <div className="p-4 bg-primary/10 rounded-xl">
+                      <Target className="w-12 h-12 text-primary" />
+                    </div>
+                  </div>
+                  <CardTitle className="text-2xl">Welcome, {profile.name}!</CardTitle>
+                  <CardDescription className="text-base">
+                    You don't have any programs yet. Let's create your first one.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={() => navigate('/program-setup')}
+                    className="w-full"
+                    size="lg"
+                  >
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Create Your First Program
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </SidebarInset>
+
+        {/* Utilities Sheet */}
+        <UtilitySheet isOpen={showUtilities} onOpenChange={setShowUtilities} />
+
+        {/* Modals */}
+        <UpdateMaxesModal isOpen={showMaxesModal} onClose={() => setShowMaxesModal(false)} />
+        <CheckInModal
+          type={checkInModal.type}
+          isOpen={checkInModal.isOpen}
+          onClose={() => setCheckInModal({ ...checkInModal, isOpen: false })}
+          onPerformCheckIn={handleCheckIn}
+        />
+        <ProgramSelectorModal
+          isOpen={showProgramSelector}
+          onClose={() => setShowProgramSelector(false)}
+        />
+      </SidebarProvider>
+    );
+  }
 
   return (
     <SidebarProvider>

@@ -466,3 +466,30 @@ export async function sendAgentMessage(
 
   return await response.json();
 }
+
+/**
+ * Delete a program by ID
+ */
+export async function deleteProgram(programId: string): Promise<{ success: boolean }> {
+  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  try {
+    const response = await fetch(`${apiUrl}/api/programs/${programId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || 'Failed to delete program');
+    }
+
+    console.log('Program deleted successfully:', programId);
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to delete program:', error);
+    throw error;
+  }
+}

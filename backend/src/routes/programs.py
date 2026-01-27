@@ -416,3 +416,53 @@ async def update_program(
             status_code=500,
             detail="Failed to update program"
         )
+
+
+@router.delete("/{program_id}")
+async def delete_program(
+    program_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Delete a program by ID.
+
+    Args:
+        program_id: Program ID to delete
+        db: Database session
+
+    Returns:
+        Success message
+    """
+    if db is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Database not configured"
+        )
+
+    try:
+        result = await db.execute(
+            select(Program).where(Program.id == program_id)
+        )
+        program = result.scalar_one_or_none()
+
+        if not program:
+            raise HTTPException(status_code=404, detail="Program not found")
+
+        await db.delete(program)
+        await db.commit()
+
+        logger.info(f"Program deleted: {program_id}")
+
+        return {
+            "id": program_id,
+            "message": "Program deleted successfully"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete program: {e}", exc_info=True)
+        await db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to delete program"
+        )

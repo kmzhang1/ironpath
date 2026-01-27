@@ -20,8 +20,11 @@ import {
   Download,
   LogOut,
   Dumbbell,
-  BookOpen
+  BookOpen,
+  Moon,
+  Sun
 } from "lucide-react"
+import { useTheme } from "@/contexts/ThemeContext"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: { name: string; email: string };
@@ -31,6 +34,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
 }
 
 export function AppSidebar({ user, onNavigate, onAction, activeTab, ...props }: AppSidebarProps) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <Sidebar collapsible="icon" {...props} className="overflow-hidden">
       <SidebarHeader>
@@ -121,6 +126,15 @@ export function AppSidebar({ user, onNavigate, onAction, activeTab, ...props }: 
 
       <SidebarFooter>
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={toggleTheme}
+              tooltip={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun /> : <Moon />}
+              <span className="truncate">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={() => onAction('logout')}
