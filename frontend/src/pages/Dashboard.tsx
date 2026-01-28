@@ -83,12 +83,16 @@ export function Dashboard() {
     profile,
     reset,
     completeSession,
+    uncompleteSession,
     getSessionProgress,
     submitWorkoutFeedback: storeFeedback,
     scheduleWorkout,
+    scheduleWorkoutWithCascade,
     getScheduledDate,
     addCheckIn,
     progressHistory,
+    setIntensityRating,
+    getIntensityRating,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'profile'>('dashboard');
@@ -338,7 +342,9 @@ export function Dashboard() {
                         >
                           {week.sessions.map((session, idx) => {
                           const sessionProgress = getSessionProgress(week.weekNumber, session.dayNumber);
-                          const scheduledDate = getScheduledDate(week.weekNumber, session.dayNumber);
+                          // Use progress-tracked date if set, otherwise fall back to program-assigned date
+                          const scheduledDate = getScheduledDate(week.weekNumber, session.dayNumber) || session.scheduledDate;
+                          const intensityRating = getIntensityRating(week.weekNumber, session.dayNumber);
 
                           return (
                             <motion.div key={idx} variants={itemVariants}>
@@ -356,7 +362,13 @@ export function Dashboard() {
                                       </div>
                                       <DatePickerButton
                                         value={scheduledDate}
-                                        onChange={(date) => scheduleWorkout(week.weekNumber, session.dayNumber, date)}
+                                        onChange={(date, cascade) => {
+                                          if (cascade && scheduledDate) {
+                                            scheduleWorkoutWithCascade(week.weekNumber, session.dayNumber, date, scheduledDate);
+                                          } else {
+                                            scheduleWorkout(week.weekNumber, session.dayNumber, date);
+                                          }
+                                        }}
                                       />
                                     </div>
                                   </div>
@@ -372,11 +384,12 @@ export function Dashboard() {
                                     )}
                                     {sessionProgress?.completed && (
                                       <Button
-                                        disabled
+                                        onClick={() => uncompleteSession(week.weekNumber, session.dayNumber)}
                                         size="sm"
+                                        variant="outline"
                                         className="gap-2 h-8"
                                       >
-                                        <CheckCircle className="h-4 w-4" /> Completed
+                                        <CheckCircle className="h-4 w-4" /> Undo Complete
                                       </Button>
                                     )}
                                     <Button variant="ghost" size="sm" onClick={() => handleOpenFeedback(week.weekNumber, session.dayNumber, session.focus)}>
@@ -392,27 +405,42 @@ export function Dashboard() {
                                   exercises={session.exercises}
                                   sessionCompleted={sessionProgress?.completed}
                                 />
-                                
-                                {!sessionProgress?.completed && (
-                                  <div className="p-4 bg-muted/10 border-t flex justify-between items-center">
-                                     <span className="text-xs font-medium text-muted-foreground">Intensity Check</span>
-                                     <div className="flex gap-2">
-                                       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => alert('Too Easy')}>
-                                         <Zap className="mr-1 h-3 w-3 text-blue-500"/> Too Easy
-                                       </Button>
-                                       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => alert('Perfect')}>
-                                         <Target className="mr-1 h-3 w-3 text-sky-400"/> Perfect
-                                       </Button>
-                                       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => alert('Too Hard')}>
-                                         <Flame className="mr-1 h-3 w-3 text-orange-500"/> Too Hard
-                                       </Button>
-                                     </div>
-                                  </div>
-                                )}
+
+                                <div className="p-4 bg-muted/10 border-t flex justify-between items-center">
+                                   <span className="text-xs font-medium text-muted-foreground">
+                                     {intensityRating ? 'Intensity Recorded' : 'Intensity Check'}
+                                   </span>
+                                   <div className="flex gap-2">
+                                     <Button
+                                       variant={intensityRating === 'easy' ? 'default' : 'outline'}
+                                       size="sm"
+                                       className={`h-7 text-xs ${intensityRating === 'easy' ? 'bg-blue-500 hover:bg-blue-600' : ''}`}
+                                       onClick={() => setIntensityRating(week.weekNumber, session.dayNumber, 'easy')}
+                                     >
+                                       <Zap className="mr-1 h-3 w-3"/> Too Easy
+                                     </Button>
+                                     <Button
+                                       variant={intensityRating === 'perfect' ? 'default' : 'outline'}
+                                       size="sm"
+                                       className={`h-7 text-xs ${intensityRating === 'perfect' ? 'bg-sky-500 hover:bg-sky-600' : ''}`}
+                                       onClick={() => setIntensityRating(week.weekNumber, session.dayNumber, 'perfect')}
+                                     >
+                                       <Target className="mr-1 h-3 w-3"/> Perfect
+                                     </Button>
+                                     <Button
+                                       variant={intensityRating === 'hard' ? 'default' : 'outline'}
+                                       size="sm"
+                                       className={`h-7 text-xs ${intensityRating === 'hard' ? 'bg-orange-500 hover:bg-orange-600' : ''}`}
+                                       onClick={() => setIntensityRating(week.weekNumber, session.dayNumber, 'hard')}
+                                     >
+                                       <Flame className="mr-1 h-3 w-3"/> Too Hard
+                                     </Button>
+                                   </div>
+                                </div>
                               </CardContent>
                             </Card>
                             </motion.div>
-                          )
+                          );
                         })}
                         </motion.div>
                       </motion.div>

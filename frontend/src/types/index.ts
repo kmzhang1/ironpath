@@ -30,12 +30,14 @@ export interface ProgramGenerationRequest {
   minutesPerWorkout: number; // Target workout duration (30-120 minutes)
   limitations: string[]; // e.g., "Low back injury"
   focusAreas: string[]; // e.g., "Lockout strength"
+  startDate?: string; // ISO date when program starts - used to assign workout dates
 }
 
 // 3. The AI-Generated Response Structure
 export interface LiftingSession {
   dayNumber: number; // 1-7
   focus: string; // e.g., "Squat Volume"
+  scheduledDate?: string; // ISO date assigned based on program start date
   exercises: {
     name: string;
     sets: number;
@@ -94,6 +96,9 @@ export type FeedbackCategory =
   | 'feeling_strong'
   | 'other';
 
+// Intensity rating for post-workout quick feedback
+export type IntensityRating = 'easy' | 'perfect' | 'hard';
+
 export interface WorkoutFeedback {
   sessionId: string;
   weekNumber: number;
@@ -113,6 +118,7 @@ export interface SessionProgress {
   scheduledDate?: string; // ISO 8601 date when workout is scheduled/completed
   exerciseLogs: ExerciseLog[];
   feedback?: WorkoutFeedback;
+  intensityRating?: IntensityRating; // Post-workout perceived difficulty
 }
 
 export interface CheckInAnalysis {

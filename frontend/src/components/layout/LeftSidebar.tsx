@@ -7,7 +7,6 @@ import {
   Activity,
   Download,
   Calculator,
-  TrendingUp,
   LogOut,
   Sun,
   Moon,
@@ -28,7 +27,7 @@ interface LeftSidebarProps {
 export function LeftSidebar({
   onNavigate,
   onExport,
-  onUpdateMaxes,
+  onUpdateMaxes: _onUpdateMaxes,
   onUtilities,
   onLogout,
   currentTab = 'dashboard',

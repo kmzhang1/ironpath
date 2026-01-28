@@ -17,6 +17,7 @@ from .routes.profiles import router as profiles_router
 from .routes.router import router as agent_router
 from .routes.readiness import router as readiness_router
 from .routes.methodologies import router as methodologies_router
+from .routes.progress import router as progress_router
 
 # Configure logging
 logging.basicConfig(
@@ -100,6 +101,7 @@ app.include_router(profiles_router, prefix="/api")
 app.include_router(agent_router, prefix="/api")
 app.include_router(readiness_router, prefix="/api")
 app.include_router(methodologies_router, prefix="/api")
+app.include_router(progress_router, prefix="/api")
 
 
 # Global exception handler

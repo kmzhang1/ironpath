@@ -3,19 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { useAppStore } from '@/store';
 import { generateProgram, saveProgram } from '@/services/api';
-import { Sparkles, Loader2, Target } from 'lucide-react';
-import type { ProgramGenerationRequest, LifterProfile } from '@/types';
+import { Sparkles, Loader2, Target, CalendarIcon } from 'lucide-react';
+import type { ProgramGenerationRequest, LifterProfile, FullProgram } from '@/types';
 
 const programSchema = z.object({
   goal: z.enum(['peaking', 'hypertrophy', 'strength_block'], {
-    required_error: 'Please select a training goal',
+    message: 'Please select a training goal',
   }),
   weeks: z.number().min(4).max(16),
   daysPerWeek: z.number().min(3).max(6),
@@ -23,6 +26,9 @@ const programSchema = z.object({
   methodologyId: z.string().optional(),
   limitations: z.string().optional(),
   focusAreas: z.string().optional(),
+  startDate: z.date({
+    message: 'Please select a start date for your program',
+  }),
   // 1RM Goals (optional)
   squatGoal: z.number().optional(),
   benchGoal: z.number().optional(),
@@ -53,6 +59,7 @@ export function ProgramSetup() {
       methodologyId: '',
       limitations: '',
       focusAreas: '',
+      startDate: new Date(), // Default to today
       squatGoal: profile?.oneRepMax.squat,
       benchGoal: profile?.oneRepMax.bench,
       deadliftGoal: profile?.oneRepMax.deadlift,
@@ -63,6 +70,60 @@ export function ProgramSetup() {
     navigate('/profile-setup');
     return null;
   }
+
+  // Assign scheduled dates to all sessions based on start date and days per week
+  const assignSessionDates = (program: FullProgram, startDate: Date, daysPerWeek: number): FullProgram => {
+    // Map daysPerWeek to actual day indices (0=Sunday, 1=Monday, etc.)
+    // Common training patterns:
+    // 3 days: Mon, Wed, Fri (1, 3, 5)
+    // 4 days: Mon, Tue, Thu, Fri (1, 2, 4, 5)
+    // 5 days: Mon, Tue, Wed, Thu, Fri (1, 2, 3, 4, 5)
+    // 6 days: Mon-Sat (1, 2, 3, 4, 5, 6)
+    const trainingDayPatterns: Record<number, number[]> = {
+      3: [1, 3, 5],        // Mon, Wed, Fri
+      4: [1, 2, 4, 5],     // Mon, Tue, Thu, Fri
+      5: [1, 2, 3, 4, 5],  // Mon-Fri
+      6: [1, 2, 3, 4, 5, 6], // Mon-Sat
+    };
+
+    const trainingDays = trainingDayPatterns[daysPerWeek] || trainingDayPatterns[4];
+
+    // Clone the program to avoid mutation
+    const updatedProgram: FullProgram = JSON.parse(JSON.stringify(program));
+
+    // Get the Monday of the week containing startDate
+    const getWeekStart = (date: Date): Date => {
+      const result = new Date(date);
+      const day = result.getDay();
+      const diff = day === 0 ? -6 : 1 - day; // Adjust to Monday
+      result.setDate(result.getDate() + diff);
+      return result;
+    };
+
+    const weekStart = getWeekStart(startDate);
+
+    updatedProgram.weeks.forEach((week) => {
+      // Calculate the Monday of this training week
+      const weekOffset = (week.weekNumber - 1) * 7;
+      const weekMonday = new Date(weekStart);
+      weekMonday.setDate(weekMonday.getDate() + weekOffset);
+
+      week.sessions.forEach((session, sessionIndex) => {
+        // Get the training day for this session (wrapping if needed)
+        const trainingDayIndex = sessionIndex % trainingDays.length;
+        const targetWeekday = trainingDays[trainingDayIndex];
+
+        // Calculate the actual date
+        const sessionDate = new Date(weekMonday);
+        const daysFromMonday = targetWeekday - 1; // Monday = 1, so subtract 1
+        sessionDate.setDate(sessionDate.getDate() + daysFromMonday);
+
+        session.scheduledDate = sessionDate.toISOString();
+      });
+    });
+
+    return updatedProgram;
+  };
 
   const onSubmit = async (data: ProgramFormValues) => {
     setIsGenerating(true);
@@ -80,9 +141,14 @@ export function ProgramSetup() {
         minutesPerWorkout: data.minutesPerWorkout,
         limitations: data.limitations ? data.limitations.split(',').map(s => s.trim()) : [],
         focusAreas: data.focusAreas ? data.focusAreas.split(',').map(s => s.trim()) : [],
+        startDate: data.startDate.toISOString(),
       };
 
-      const program = await generateProgram(request, updatedProfile);
+      let program = await generateProgram(request, updatedProfile);
+
+      // Assign scheduled dates to all sessions
+      program = assignSessionDates(program, data.startDate, data.daysPerWeek);
+
       addProgram(program);
       await saveProgram(program);
       navigate('/dashboard');
@@ -289,6 +355,43 @@ export function ProgramSetup() {
                     )}
                   />
                 </div>
+
+                {/* Start Date */}
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Program Start Date</FormLabel>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              className={`w-full pl-3 text-left font-normal ${!field.value ? 'text-muted-foreground' : ''}`}
+                            >
+                              {field.value ? format(field.value, 'PPP') : 'Pick a date'}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Workout dates will be assigned based on this start date
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Minutes Per Workout */}
                 <FormField

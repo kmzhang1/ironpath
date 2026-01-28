@@ -9,7 +9,14 @@ import type {
   ExerciseLog,
   WorkoutFeedback,
   CheckInAnalysis,
+  IntensityRating,
 } from '@/types';
+import {
+  syncSessionCompletion,
+  syncSessionUncomplete,
+  syncIntensityRating,
+  syncScheduledDate,
+} from '@/services/progressSync';
 
 interface AppState {
   // Auth
@@ -37,6 +44,7 @@ interface AppState {
   progressHistory: ProgressHistory | null;
   logExercise: (log: ExerciseLog) => void;
   completeSession: (weekNum: number, dayNum: number) => void;
+  uncompleteSession: (weekNum: number, dayNum: number) => void;
   getSessionProgress: (weekNum: number, dayNum: number) => SessionProgress | undefined;
 
   // Workout Feedback
@@ -45,7 +53,12 @@ interface AppState {
 
   // Session Dating
   scheduleWorkout: (weekNum: number, dayNum: number, date: string) => void;
+  scheduleWorkoutWithCascade: (weekNum: number, dayNum: number, newDate: string, oldDate: string) => void;
   getScheduledDate: (weekNum: number, dayNum: number) => string | undefined;
+
+  // Intensity Rating
+  setIntensityRating: (weekNum: number, dayNum: number, rating: IntensityRating) => void;
+  getIntensityRating: (weekNum: number, dayNum: number) => IntensityRating | undefined;
 
   // Check-ins
   addCheckIn: (checkIn: CheckInAnalysis) => void;
@@ -247,16 +260,68 @@ export const useAppStore = create<AppState>()(
       },
       completeSession: (weekNum, dayNum) => {
         const history = get().progressHistory;
-        if (!history) return;
+        const currentProgram = get().currentProgram;
+        if (!history || !currentProgram) return;
+
+        const sessionId = `${weekNum}-${dayNum}`;
+        let session = history.sessions.find(s => s.sessionId === sessionId);
+
+        // Create session entry if it doesn't exist
+        if (!session) {
+          session = {
+            sessionId,
+            weekNumber: weekNum,
+            dayNumber: dayNum,
+            completed: false,
+            exerciseLogs: [],
+          };
+          history.sessions.push(session);
+        }
+
+        session.completed = true;
+        session.completedAt = new Date().toISOString();
+        set({ progressHistory: { ...history } });
+
+        // Sync to database (background, non-blocking)
+        syncSessionCompletion(
+          currentProgram.id,
+          weekNum,
+          dayNum,
+          session.completedAt,
+          session.intensityRating,
+          session.scheduledDate
+        ).catch(error => {
+          console.error('Failed to sync completion to database:', error);
+          // Keep in localStorage - will retry via retry queue
+        });
+      },
+      uncompleteSession: (weekNum, dayNum) => {
+        const history = get().progressHistory;
+        const currentProgram = get().currentProgram;
+        if (!history || !currentProgram) return;
 
         const sessionId = `${weekNum}-${dayNum}`;
         const session = history.sessions.find(s => s.sessionId === sessionId);
 
-        if (session) {
-          session.completed = true;
-          session.completedAt = new Date().toISOString();
-          set({ progressHistory: { ...history } });
+        if (!session) {
+          // No session to uncomplete
+          return;
         }
+
+        // Mark as not completed
+        session.completed = false;
+        session.completedAt = undefined;
+        set({ progressHistory: { ...history } });
+
+        // Sync to database (background, non-blocking)
+        syncSessionUncomplete(
+          currentProgram.id,
+          weekNum,
+          dayNum
+        ).catch(error => {
+          console.error('Failed to sync un-completion to database:', error);
+          // Keep in localStorage - will retry via retry queue
+        });
       },
       getSessionProgress: (weekNum, dayNum) => {
         const history = get().progressHistory;
@@ -296,7 +361,8 @@ export const useAppStore = create<AppState>()(
       // Session Dating
       scheduleWorkout: (weekNum, dayNum, date) => {
         const history = get().progressHistory;
-        if (!history) return;
+        const currentProgram = get().currentProgram;
+        if (!history || !currentProgram) return;
 
         const sessionId = `${weekNum}-${dayNum}`;
         let session = history.sessions.find(s => s.sessionId === sessionId);
@@ -314,10 +380,92 @@ export const useAppStore = create<AppState>()(
 
         session.scheduledDate = date;
         set({ progressHistory: { ...history } });
+
+        // Sync to database (background, non-blocking)
+        syncScheduledDate(
+          currentProgram.id,
+          weekNum,
+          dayNum,
+          date
+        ).catch(error => {
+          console.error('Failed to sync scheduled date to database:', error);
+          // Keep in localStorage - will retry via retry queue
+        });
+      },
+      scheduleWorkoutWithCascade: (weekNum, dayNum, newDate, oldDate) => {
+        const program = get().currentProgram;
+        const history = get().progressHistory;
+        if (!program || !history) return;
+
+        // Calculate the date difference in milliseconds
+        const oldDateObj = new Date(oldDate);
+        const newDateObj = new Date(newDate);
+        const dateDiffMs = newDateObj.getTime() - oldDateObj.getTime();
+
+        // Update the current session
+        get().scheduleWorkout(weekNum, dayNum, newDate);
+
+        // Find all future sessions and update their dates
+        program.weeks.forEach((week) => {
+          week.sessions.forEach((session) => {
+            // Skip sessions that come before or are the current session
+            if (week.weekNumber < weekNum) return;
+            if (week.weekNumber === weekNum && session.dayNumber <= dayNum) return;
+
+            // Get the current scheduled date (from progress history or program)
+            const existingProgressDate = get().getScheduledDate(week.weekNumber, session.dayNumber);
+            const currentDate = existingProgressDate || session.scheduledDate;
+
+            if (currentDate) {
+              // Shift the date by the same amount
+              const shiftedDate = new Date(new Date(currentDate).getTime() + dateDiffMs);
+              get().scheduleWorkout(week.weekNumber, session.dayNumber, shiftedDate.toISOString());
+            }
+          });
+        });
       },
       getScheduledDate: (weekNum, dayNum) => {
         const session = get().getSessionProgress(weekNum, dayNum);
         return session?.scheduledDate;
+      },
+
+      // Intensity Rating
+      setIntensityRating: (weekNum, dayNum, rating) => {
+        const history = get().progressHistory;
+        const currentProgram = get().currentProgram;
+        if (!history || !currentProgram) return;
+
+        const sessionId = `${weekNum}-${dayNum}`;
+        let session = history.sessions.find(s => s.sessionId === sessionId);
+
+        if (!session) {
+          session = {
+            sessionId,
+            weekNumber: weekNum,
+            dayNumber: dayNum,
+            completed: false,
+            exerciseLogs: [],
+          };
+          history.sessions.push(session);
+        }
+
+        session.intensityRating = rating;
+        set({ progressHistory: { ...history } });
+
+        // Sync to database (background, non-blocking)
+        syncIntensityRating(
+          currentProgram.id,
+          weekNum,
+          dayNum,
+          rating
+        ).catch(error => {
+          console.error('Failed to sync intensity rating to database:', error);
+          // Keep in localStorage - will retry via retry queue
+        });
+      },
+      getIntensityRating: (weekNum, dayNum) => {
+        const session = get().getSessionProgress(weekNum, dayNum);
+        return session?.intensityRating;
       },
 
       // Check-ins
