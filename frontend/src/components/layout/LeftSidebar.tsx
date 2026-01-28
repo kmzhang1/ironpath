@@ -67,12 +67,6 @@ export function LeftSidebar({
       onClick: () => onNavigate('checkin-weekly'),
     },
     {
-      id: 'update-maxes',
-      label: 'Update 1RMs',
-      icon: TrendingUp,
-      onClick: onUpdateMaxes,
-    },
-    {
       id: 'utilities',
       label: 'Utilities',
       icon: Calculator,

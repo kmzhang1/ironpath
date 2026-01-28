@@ -49,7 +49,7 @@ export function Profile() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-[#6B7280] font-normal">No profile data available</p>
+        <p className="text-[var(--muted-foreground)] font-normal">No profile data available</p>
       </div>
     );
   }
@@ -129,11 +129,11 @@ export function Profile() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-[#1A1A1A] flex items-center gap-3 tracking-tight">
-          <User className="text-[#1A1A1A]" size={28} />
+        <h1 className="text-2xl font-semibold text-[var(--foreground)] flex items-center gap-3 tracking-tight">
+          <User className="text-[var(--foreground)]" size={28} />
           Athlete Profile
         </h1>
-        <p className="text-[#6B7280] font-normal mt-1 text-sm">
+        <p className="text-[var(--muted-foreground)] font-normal mt-1 text-sm">
           Manage your personal information and track your progress
         </p>
       </div>
@@ -143,11 +143,11 @@ export function Profile() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
-                <User size={18} className="text-[#1A1A1A]" />
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-[var(--foreground)]">
+                <User size={18} className="text-[var(--foreground)]" />
                 Personal Information
               </CardTitle>
-              <CardDescription className="text-sm font-normal text-[#6B7280]">Your basic athlete details</CardDescription>
+              <CardDescription className="text-sm font-normal text-[var(--muted-foreground)]">Your basic athlete details</CardDescription>
             </div>
             {!isEditingPersonal ? (
               <Button
@@ -192,7 +192,7 @@ export function Profile() {
                   className="mt-2"
                 />
               ) : (
-                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB]">
+                <div className="mt-2 px-4 py-2.5 bg-[var(--card)] rounded-lg text-[var(--foreground)] text-sm font-normal border border-[var(--border)]">
                   {profile.name}
                 </div>
               )}
@@ -208,7 +208,7 @@ export function Profile() {
                   className="mt-2"
                 />
               ) : (
-                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB]">
+                <div className="mt-2 px-4 py-2.5 bg-[var(--card)] rounded-lg text-[var(--foreground)] text-sm font-normal border border-[var(--border)]">
                   {profile.biometrics.age} years
                 </div>
               )}
@@ -225,7 +225,7 @@ export function Profile() {
                   className="mt-2"
                 />
               ) : (
-                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB]">
+                <div className="mt-2 px-4 py-2.5 bg-[var(--card)] rounded-lg text-[var(--foreground)] text-sm font-normal border border-[var(--border)]">
                   {profile.biometrics.bodyweight} {unit}
                 </div>
               )}
@@ -243,7 +243,7 @@ export function Profile() {
                   <option value="female">Female</option>
                 </select>
               ) : (
-                <div className="mt-2 px-4 py-2.5 bg-white rounded-lg text-[#1A1A1A] text-sm font-normal border border-[#D1D5DB] capitalize">
+                <div className="mt-2 px-4 py-2.5 bg-[var(--card)] rounded-lg text-[var(--foreground)] text-sm font-normal border border-[var(--border)] capitalize">
                   {profile.biometrics.sex}
                 </div>
               )}
@@ -257,11 +257,11 @@ export function Profile() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
-                <TrendingUp size={18} className="text-[#1A1A1A]" />
+              <CardTitle className="flex items-center gap-2 text-base font-semibold text-[var(--foreground)]">
+                <TrendingUp size={18} className="text-[var(--foreground)]" />
                 One Rep Maxes (1RM)
               </CardTitle>
-              <CardDescription className="text-sm font-normal text-[#6B7280]">Your current strength levels</CardDescription>
+              <CardDescription className="text-sm font-normal text-[var(--muted-foreground)]">Your current strength levels</CardDescription>
             </div>
             {!isEditingMaxes ? (
               <Button
@@ -310,8 +310,8 @@ export function Profile() {
                   className="mt-2"
                 />
               ) : (
-                <div className="mt-2 px-4 py-3 bg-white rounded-xl border border-[#D1D5DB]">
-                  <p className="text-xl font-semibold text-[#1A1A1A]">
+                <div className="mt-2 px-4 py-3 bg-[var(--card)] rounded-xl border border-[var(--border)]">
+                  <p className="text-xl font-semibold text-[var(--foreground)]">
                     {profile.oneRepMax.squat} {unit}
                   </p>
                 </div>
@@ -332,8 +332,8 @@ export function Profile() {
                   className="mt-2"
                 />
               ) : (
-                <div className="mt-2 px-4 py-3 bg-white rounded-xl border border-[#D1D5DB]">
-                  <p className="text-xl font-semibold text-[#1A1A1A]">
+                <div className="mt-2 px-4 py-3 bg-[var(--card)] rounded-xl border border-[var(--border)]">
+                  <p className="text-xl font-semibold text-[var(--foreground)]">
                     {profile.oneRepMax.bench} {unit}
                   </p>
                 </div>
@@ -354,8 +354,8 @@ export function Profile() {
                   className="mt-2"
                 />
               ) : (
-                <div className="mt-2 px-4 py-3 bg-white rounded-xl border border-[#D1D5DB]">
-                  <p className="text-xl font-semibold text-[#1A1A1A]">
+                <div className="mt-2 px-4 py-3 bg-[var(--card)] rounded-xl border border-[var(--border)]">
+                  <p className="text-xl font-semibold text-[var(--foreground)]">
                     {profile.oneRepMax.deadlift} {unit}
                   </p>
                 </div>
@@ -364,11 +364,11 @@ export function Profile() {
           </div>
 
           {/* Total */}
-          <div className="mt-6 p-4 bg-white border border-[#D1D5DB] rounded-xl">
+          <div className="mt-6 p-4 bg-[var(--card)] border border-[var(--border)] rounded-xl">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-[#059669]">Total</p>
-                <p className="text-2xl font-semibold text-[#1A1A1A] mt-1">
+                <p className="text-2xl font-semibold text-[var(--foreground)] mt-1">
                   {isEditingMaxes
                     ? editedMaxes.squat + editedMaxes.bench + editedMaxes.deadlift
                     : total}{' '}
@@ -377,7 +377,7 @@ export function Profile() {
               </div>
               {hasRMHistory && totalChange !== 0 && !isEditingMaxes && (
                 <div className="text-right">
-                  <p className="text-xs font-normal text-[#6B7280]">Change from last update</p>
+                  <p className="text-xs font-normal text-[var(--muted-foreground)]">Change from last update</p>
                   <p
                     className={`text-lg font-semibold ${
                       totalChange > 0 ? 'text-[#059669]' : 'text-[#DC2626]'
@@ -396,28 +396,28 @@ export function Profile() {
       {/* Training Statistics */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
-            <Activity size={18} className="text-[#1A1A1A]" />
+          <CardTitle className="flex items-center gap-2 text-base font-semibold text-[var(--foreground)]">
+            <Activity size={18} className="text-[var(--foreground)]" />
             Training Statistics
           </CardTitle>
-          <CardDescription className="text-sm font-normal text-[#6B7280]">Your progress and activity summary</CardDescription>
+          <CardDescription className="text-sm font-normal text-[var(--muted-foreground)]">Your progress and activity summary</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Total Sessions */}
-            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
+            <div className="p-4 bg-[var(--card)] rounded-xl border border-[var(--border)]">
               <div className="flex items-center gap-2 mb-2">
                 <Calendar size={16} className="text-[#2563EB]" />
-                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Total Sessions</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Total Sessions</p>
               </div>
-              <p className="text-2xl font-semibold text-[#1A1A1A]">{totalSessions}</p>
+              <p className="text-2xl font-semibold text-[var(--foreground)]">{totalSessions}</p>
             </div>
 
             {/* Completed Sessions */}
-            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
+            <div className="p-4 bg-[var(--card)] rounded-xl border border-[var(--border)]">
               <div className="flex items-center gap-2 mb-2">
                 <CheckCircle size={16} className="text-[#10B981]" />
-                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Completed</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Completed</p>
               </div>
               <p className="text-2xl font-semibold text-[#10B981]">
                 {completedSessions}
@@ -425,10 +425,10 @@ export function Profile() {
             </div>
 
             {/* Adherence Rate */}
-            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
+            <div className="p-4 bg-[var(--card)] rounded-xl border border-[var(--border)]">
               <div className="flex items-center gap-2 mb-2">
                 <Target size={16} className="text-[#7C3AED]" />
-                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Adherence</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Adherence</p>
               </div>
               <p className="text-2xl font-semibold text-[#7C3AED]">
                 {adherenceRate.toFixed(0)}%
@@ -436,10 +436,10 @@ export function Profile() {
             </div>
 
             {/* Check-ins */}
-            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
+            <div className="p-4 bg-[var(--card)] rounded-xl border border-[var(--border)]">
               <div className="flex items-center gap-2 mb-2">
                 <Zap size={16} className="text-[#CA8A04]" />
-                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Check-ins</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Check-ins</p>
               </div>
               <p className="text-2xl font-semibold text-[#CA8A04]">
                 {totalCheckIns}
@@ -447,10 +447,10 @@ export function Profile() {
             </div>
 
             {/* Feedback Submitted */}
-            <div className="p-4 bg-white rounded-xl border border-[#D1D5DB]">
+            <div className="p-4 bg-[var(--card)] rounded-xl border border-[var(--border)]">
               <div className="flex items-center gap-2 mb-2">
                 <Award size={16} className="text-[#EA580C]" />
-                <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Feedback</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Feedback</p>
               </div>
               <p className="text-2xl font-semibold text-[#EA580C]">
                 {feedbackCount}
@@ -459,15 +459,15 @@ export function Profile() {
 
             {/* Current Program */}
             {currentProgram && (
-              <div className="p-4 bg-white rounded-xl border border-[#D1D5DB] col-span-2 md:col-span-3">
+              <div className="p-4 bg-[var(--card)] rounded-xl border border-[var(--border)] col-span-2 md:col-span-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <Calendar size={16} className="text-[#1A1A1A]" />
-                  <p className="text-xs font-medium uppercase tracking-wider text-[#9CA3AF]">Current Program</p>
+                  <Calendar size={16} className="text-[var(--foreground)]" />
+                  <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">Current Program</p>
                 </div>
-                <p className="text-base font-semibold text-[#1A1A1A]">
+                <p className="text-base font-semibold text-[var(--foreground)]">
                   {currentProgram.title}
                 </p>
-                <p className="text-sm font-normal text-[#6B7280] mt-1">
+                <p className="text-sm font-normal text-[var(--muted-foreground)] mt-1">
                   {currentProgram.weeks.length} weeks •{' '}
                   Created {new Date(currentProgram.createdAt).toLocaleDateString()}
                 </p>
@@ -481,11 +481,11 @@ export function Profile() {
       {rmHistory.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-[#1A1A1A]">
-              <TrendingUp size={18} className="text-[#1A1A1A]" />
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-[var(--foreground)]">
+              <TrendingUp size={18} className="text-[var(--foreground)]" />
               1RM History
             </CardTitle>
-            <CardDescription className="text-sm font-normal text-[#6B7280]">Track your strength progression over time</CardDescription>
+            <CardDescription className="text-sm font-normal text-[var(--muted-foreground)]">Track your strength progression over time</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -497,24 +497,24 @@ export function Profile() {
                   return (
                     <div
                       key={idx}
-                      className="flex items-center justify-between p-3 bg-white rounded-xl border border-[#D1D5DB]"
+                      className="flex items-center justify-between p-3 bg-[var(--card)] rounded-xl border border-[var(--border)]"
                     >
                       <div>
-                        <p className="text-sm font-normal text-[#6B7280]">
+                        <p className="text-sm font-normal text-[var(--muted-foreground)]">
                           {new Date(entry.date).toLocaleDateString()}
                         </p>
                       </div>
                       <div className="flex gap-6 text-sm">
-                        <span className="text-[#6B7280] font-normal">
-                          Squat: <span className="text-[#1A1A1A] font-medium">{entry.squat}</span>
+                        <span className="text-[var(--muted-foreground)] font-normal">
+                          Squat: <span className="text-[var(--foreground)] font-medium">{entry.squat}</span>
                         </span>
-                        <span className="text-[#6B7280] font-normal">
-                          Bench: <span className="text-[#1A1A1A] font-medium">{entry.bench}</span>
+                        <span className="text-[var(--muted-foreground)] font-normal">
+                          Bench: <span className="text-[var(--foreground)] font-medium">{entry.bench}</span>
                         </span>
-                        <span className="text-[#6B7280] font-normal">
-                          Deadlift: <span className="text-[#1A1A1A] font-medium">{entry.deadlift}</span>
+                        <span className="text-[var(--muted-foreground)] font-normal">
+                          Deadlift: <span className="text-[var(--foreground)] font-medium">{entry.deadlift}</span>
                         </span>
-                        <span className="text-[#1A1A1A] font-semibold">
+                        <span className="text-[var(--foreground)] font-semibold">
                           Total: {entryTotal} {unit}
                         </span>
                       </div>

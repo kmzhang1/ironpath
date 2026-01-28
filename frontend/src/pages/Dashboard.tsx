@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
 
 // Domain components from features
 import { EditableExerciseTable } from '@/components/features/workouts/EditableExerciseTable';
@@ -288,6 +289,24 @@ export function Dashboard() {
              <Profile />
            ) : (
              <div className="space-y-4">
+                {/* Week Progress Bar */}
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium">Program Progress</span>
+                        <span className="text-muted-foreground">
+                          Week {activeWeek} of {currentProgram.weeks.length}
+                        </span>
+                      </div>
+                      <Progress
+                        value={(parseInt(activeWeek) / currentProgram.weeks.length) * 100}
+                        className="h-3"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Program Tabs */}
                 <Tabs value={activeWeek} onValueChange={setActiveWeek} className="space-y-4">
                   <div className="overflow-x-auto pb-2">

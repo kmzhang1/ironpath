@@ -67,3 +67,6 @@ Thumbs.db
 
 # Bun specific
 .bun/
+
+# Claude
+.claude/
